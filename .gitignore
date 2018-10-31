@@ -15,6 +15,7 @@ pom.xml.asc
 /.nrepl-port
 .hgignore
 .figwheel_server.log
+.rebel_readline_history
 .hg/
 /.cpcache
 .DS_Store
