@@ -5,20 +5,15 @@
   "
   (:require
     [oops.core :refer [oget]]
+    [cognitect.transit :as t]
     [garden.core :as gc :refer [css]]
-    [garden.color :as color :refer [hsl rgb rgba hex->rgb as-hex]]
+    [garden.color :as color :refer [hsl rgb hsla rgba hex->rgb as-hex]]
     [garden.units :as u :refer [px pt em ms percent defunit]]
     [garden.types :as gt]
-
-    [garden.compression :refer [compress-stylesheet]]
-    [rs.css :as rcss :refer [fr strs]]
-
     [garden.selectors :as gs]
     [rs.css :as rcss :refer [fr rad deg rotate3d perspective translate strs sassify-rule named?]]
-
     [rs.actions :as actions]
-    [clojure.string :as string]
-    [rs.css :as css]))
+    [clojure.string :as string]))
 
 
 (defn css-view
@@ -174,11 +169,11 @@
   ([{
      slider-parameters        :slider-parameters
      slider-button-parameters :slider-button-parameters
-     main-rules               :css-main-rules
-     canvas-rules             :canvas-rules
-     animation-rules          :animation-rules
-     {t :text}                :input-text
-     :as                      state}]
+     {main-rules      :main-rules
+      canvas-rules    :canvas-rules
+      animation-rules :animation-rules} :css
+                              {t :text} :input-text
+                              :as state}]
    [:div.root
     [css-view :main-rules {:vendors ["webkit" "moz"] :auto-prefix #{:column-width :user-select}} main-rules]
     [css-view :animation-rules {} animation-rules]
@@ -199,3 +194,69 @@
       ]
      ]]))
 
+(defn parse-colour
+  ([s]
+   (parse-colour s (string/split s #"\,|\(|\)")))
+  ([s [t & a]]
+    (case t
+      "rgb"  (apply rgb a)
+      "rgba" (apply rgba a)
+      "hsl"  (apply hsl a)
+      "hsla" (apply hsla a)
+      s)))
+
+(defn parse-unit
+  ([s]
+   (parse-unit s (reverse (re-seq #"\D|\d+" s))))
+  ([s [t x]]
+   (let [v (.parseFloat js/Number x)]
+    (case t
+      "%"  (percent v)
+      "px" (px v)
+      "em" (em v)
+      v))))
+
+(defn parse-value [k v]
+  (case (or (#{"color" "background-color"} k) (str (last v)))
+    "color" (parse-colour v)
+    "background-color" (parse-colour v)
+    "%" (parse-unit v)
+    v))
+
+(defn to-clj [s]
+  (reduce
+    (fn [r i]
+      (assoc r (.item s i) (parse-value (.item s i) (.getPropertyValue s (.item s i)))))
+    {} (range (.-length s))))
+
+(defn to-transit [state]
+  (t/write (t/writer :json-verbose) state))
+
+(defn download!
+  ([tipe naym contents]
+    (println "download  as" tipe naym)
+    (let [
+          a (.createElement js/document "a")
+          f (js/Blob. (clj->js [contents]) {:type (name tipe)})
+          ]
+      (set! (.-href a) (.createObjectURL js/URL f))
+      (set! (.-download a) (str naym "." (name tipe)))
+      (println "<a>" a)
+      (.dispatchEvent a (js/MouseEvent. "click")))))
+
+(defn extraction-view
+  ([]
+   (let [element-types ["div" "span" "body"]]
+     [:div
+     [:link {:type "text/css" :rel "stylesheet"
+             :href "bootstrap.min.css" :on-load
+                   (fn [e]
+                     (println "loaded")
+                     (let [s (.-cssRules (aget (.. js/document -styleSheets) 0))
+                           sr (reduce
+                                (fn [r [selector style]]
+                                  (assoc r selector (to-clj style)))
+                                {} (remove (fn [[k v]] (or (nil? k) (nil? v))) (map (fn [i] [(.-selectorText (.item s i)) (.-style (.item s i))]) (range (.-length s)))))]
+                       ;(doseq [[k v] sr] (println k "   " v))
+                       (download! "edn" "style" (str sr))
+                       ))}]])))

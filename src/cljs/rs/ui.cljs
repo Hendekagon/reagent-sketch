@@ -12,8 +12,8 @@
   (println "---before restart---"))
 
 (defn ^:after-load start! []
-  (when (nil? @actions/app-state)
+  (when (or true (nil? @actions/app-state))
     (do
       (reset! actions/app-state (actions/make-state))))
-  (r/render [views/root-view]
+  (r/render [views/extraction-view]
      (.getElementById js/document "app")))

@@ -73,7 +73,7 @@
 
 (defn add-canvas-rules [state]
   (-> state
-      (assoc :canvas-rules
+      (assoc-in [:css :canvas-rules]
              {
               "#canvas"
                                 {
@@ -106,76 +106,74 @@
               })))
 
 
-(defn add-rules [state]
-  (assoc state :css-main-rules
-               (->
-                 {
-                  :.main
-                                          {
-                                           :background  (linear-gradient "to bottom" (rgba 216, 215, 215, 0.3) :blue)
-                                           :text-shadow [[(px 0) (px 0) (px 3) (hsl 0 0 0)] [(px 1) (px 0) (px 1) (hsl 65 49 67)]]
-                                           :color       (hsl 0 0 100)
-                                           :width       (percent 100)
-                                           :height      (percent 100)
-                                           :display     :flex
-                                           :flex-flow   "column nowrap"
+(defn add-main-rules [state]
+  (assoc-in state [:css :main-rules]
+    {
+     :.main
+                             {
+                              :background  (linear-gradient "to bottom" (rgba 216, 215, 215, 0.3) :blue)
+                              :text-shadow [[(px 0) (px 0) (px 3) (hsl 0 0 0)] [(px 1) (px 0) (px 1) (hsl 65 49 67)]]
+                              :color       (hsl 0 0 100)
+                              :width       (percent 100)
+                              :height      (percent 100)
+                              :display     :flex
+                              :flex-flow   "column nowrap"
 
-                                           }
-                  :.demo-grid
-                                          {
-                                           :padding       (em 2)
-                                           :border-radius (px 8)
-                                           :display       :grid
-                                           :background    (hsl 137 96 80)
+                              }
+     :.demo-grid
+                             {
+                              :padding       (em 2)
+                              :border-radius (px 8)
+                              :display       :grid
+                              :background    (hsl 137 96 80)
 
-                                           }
-                  ".things"
-                                          {
-                                           :display               'grid
-                                           :grid-area             :content
-                                           :grid-template-columns [[(percent 20) (percent 80)]]
-                                           :grid-column-gap       (em 1)
-                                           :grid-auto-rows        :auto
-                                           :grid-row-gap          (em 2.5)
-                                           :background            (rgb 200 205 210)
-                                           :padding               (percent 4)
-                                           }
-                  :body                   {
-                                           :animation-name            :gradient-flow
-                                           :animation-duration        (ms 10000)
-                                           :animation-iteration-count :infinite
-                                           :animation-timing-function :linear
-                                           :background                (linear-gradient "to top" :gray :white)
-                                           :margin                    (percent 1)
-                                           :font-family               ["Gill Sans" "Helvetica" "Verdana" "Sans Serif"]
-                                           :font-size                 (em 1)
-                                           :font-weight               :normal
-                                           :cursor                    :default
-                                           :zoom                      0.8
-                                           }
-                  :.button                {
-                                           :cursor      :pointer
-                                           :width       (px 10)
-                                           :height      (px 28)
-                                           :margin-left (percent 1)
+                              }
+     ".things"
+                             {
+                              :display               'grid
+                              :grid-area             :content
+                              :grid-template-columns [[(percent 20) (percent 80)]]
+                              :grid-column-gap       (em 1)
+                              :grid-auto-rows        :auto
+                              :grid-row-gap          (em 2.5)
+                              :background            (rgb 200 205 210)
+                              :padding               (percent 4)
+                              }
+     :body                   {
+                              :animation-name            :gradient-flow
+                              :animation-duration        (ms 10000)
+                              :animation-iteration-count :infinite
+                              :animation-timing-function :linear
+                              :background                (linear-gradient "to top" :gray :white)
+                              :margin                    (percent 1)
+                              :font-family               ["Gill Sans" "Helvetica" "Verdana" "Sans Serif"]
+                              :font-size                 (em 1)
+                              :font-weight               :normal
+                              :cursor                    :default
+                              :zoom                      0.8
+                              }
+     :.button                {
+                              :cursor      :pointer
+                              :width       (px 10)
+                              :height      (px 28)
+                              :margin-left (percent 1)
+                              }
+     ".padding_em-1"         {:padding (em 1)}
+     ".button-refresh:hover" {}
+     "#text-demo"            {
+                              :color (hsl 20 30 90)
 
-                                           }
-                  ".button-refresh:hover" {}
-                  "#text-demo"            {
-                                           :color (hsl 20 30 90)
+                              }
+     :div.canvas-parameters  {
+                              :max-height (px 200)
+                              :padding    (px 10)
+                              }
+     :div.button-parameters  {
+                              :height  (percent 50)
+                              :padding (px 10)
+                              }
 
-                                           }
-                  :div.canvas-parameters  {
-                                           :max-height (px 200)
-                                           :padding    (px 10)
-                                           }
-                  :div.button-parameters  {
-                                           :height  (percent 50)
-                                           :padding (px 10)
-                                           }
-
-                  }
-                 )))
+     }))
 
 
 (defn add-units-rules [state]
@@ -197,15 +195,16 @@
      :.fr      {:background (hsl 200 70 80) :color (hsl 15 20 10)}}))
 
 
-(defn animation-rules [duration-ms]
-  [
-   (gt/->CSSAtRule :keyframes
-     {:identifier :gradient-flow
-      :frames     [
-                   [:0%   {:background (linear-gradient "to top" (rgb 100 100 100) (rgb 255 255 255))}]
-                   [:50%  {:background (linear-gradient "to top" (rgb 255 255 255) (rgb 150 150 150))}]
-                   [:100% {:background (linear-gradient "to top" (rgb 100 100 100) (rgb 255 255 255))}]]})
-   ])
+(defn add-animation-rules [state]
+  (assoc-in state [:css :animation]
+    [
+    (gt/->CSSAtRule :keyframes
+      {:identifier :gradient-flow
+       :frames     [
+                    [:0% {:background (linear-gradient "to top" (rgb 100 100 100) (rgb 255 255 255))}]
+                    [:50% {:background (linear-gradient "to top" (rgb 255 255 255) (rgb 150 150 150))}]
+                    [:100% {:background (linear-gradient "to top" (rgb 100 100 100) (rgb 255 255 255))}]]})
+    ]))
 
 
 (defn add-grid-rules [state]
@@ -223,81 +222,23 @@
         :grid-column-gap       (em 1)
         }}))
 
+(defn summarize [v]
+  (cond
+    (:unit v) (str (name (:unit v)) "-" (:magnitude v))
+    (:hue v) (str "hsl-" (string/join "-" ((juxt :hue :saturation :lightness) v)))
+    (:red v) (str "rgb-" (string/join "-" ((juxt :red :green :blue) v)))
+    (map? v)
+      (string/join "-"
+        (map str
+         (interleave
+           (map (fn [k] (if (keyword? k) (name k) k)) (keys v))
+           (map (fn [v] (if (vector? v) (string/join "-" (map str v)) (if (keyword? v) (name v) v))) (vals v)))))
+    (vector? v) (string/join "-" (map summarize v))
+    :otherwise "*"))
 
-(defn add-main-rules [state]
-  (assoc-in state [:css :main]
-    {
-     :body    {
-               :margin      0
-               :padding     0
-               :background  (rgb 50 50 50)
-               :font-family ["Gill Sans" "Helvetica" "Verdana" "Sans Serif"]
-               :font-size   (em 1)
-               :font-weight :normal
-               :cursor      :default
-               }
-     :.main
-              {
-               :background            (rgb 70 70 70)
-               :color                 (rgb 255 250 210)
-               :width                 (percent 100)
-               :height                (percent 100)
-               :display               :grid
-               :grid-template-columns [[(em 2) (fr 1) (em 2)]]
-               :grid-template-rows    :auto
-               :grid-column-gap       (em 1)
-               :grid-row-gap          (em 2)
-               :grid-template-areas   (strs '[[tl t tr]
-                                              [l content r]
-                                              [bl b br]])
-               }
-     ".things"
-       {
-        :display               'grid
-        :grid-area             :content
-        :grid-template-columns [[(percent 20) (percent 80)]]
-        :grid-column-gap       (em 1)
-        :grid-auto-rows        :auto
-        :grid-row-gap          (em 2.5)
-        :background            (rgb 70 70 70)
-        }
-     ".thing" {:align-self :start :justify-self :stretch}
-     ".input" {:align-self :start}
-     ".text-input"
-       {
-        :font-size  (em 1)
-        :color      (rgb 255 252 250)
-        :background (rgb 90 90 90)
-        :padding    (em 1)
-        :border     :none
-        }
-     :.list {
-               :display :flex
-               :flex-flow [:row :wrap]
-             }
-     "input[type=range]"
-     {
-      :background :none
-      :&
-        {
-         ::-moz-range-thumb
-         {
-           :background (rgb 100 100 100)
-           :&
-           {
-            :hover
-            {
-              :background (rgb 150 150 150)
-            }
-           }
-         }
-         ::-webkit-slider-thumb
-         {
-          :background :yellow
-         }
-        }
-      }
-     :.button {:cursor :pointer}
-     }))
-
-
+(defn make-class-names [rule-maps]
+  (sort
+    (map (fn [[k v]]
+          (keyword
+            (str (if (keyword? k) (name k) (str k)) "_" (summarize v))))
+      (distinct (mapcat last (mapcat identity (vals rule-maps)))))))
