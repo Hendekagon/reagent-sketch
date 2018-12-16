@@ -142,7 +142,7 @@
                                            }
                   :body                   {
                                            :animation-name            :gradient-flow
-                                           :animation-duration        (ms 10000)
+                                           :animation-duration        (ms 2000)
                                            :animation-iteration-count :infinite
                                            :animation-timing-function :linear
                                            :background                (linear-gradient "to top" :gray :white)
@@ -158,7 +158,6 @@
                                            :width       (px 10)
                                            :height      (px 28)
                                            :margin-left (percent 1)
-
                                            }
                   ".button-refresh:hover" {}
                   "#text-demo"            {
@@ -201,10 +200,12 @@
   [
    (gt/->CSSAtRule :keyframes
      {:identifier :gradient-flow
-      :frames     [
-                   [:0%   {:background (linear-gradient "to top" (rgb 100 100 100) (rgb 255 255 255))}]
-                   [:50%  {:background (linear-gradient "to top" (rgb 255 255 255) (rgb 150 150 150))}]
-                   [:100% {:background (linear-gradient "to top" (rgb 100 100 100) (rgb 255 255 255))}]]})
+      :frames     (map
+                    (fn [x]
+                      (let [r (* x 6.283)]
+                        [(str (* 100 x) "%")
+                         {:background (linear-gradient "to top" (hsl 0 0 (* 25 (+ 1 (Math/cos r)))) (hsl 0 0 (* 25 (+ 1 (Math/cos (+ 3.1415 r))))))}]))
+                    (range 0 1 0.01))})
    ])
 
 

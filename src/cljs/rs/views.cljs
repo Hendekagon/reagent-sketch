@@ -14,7 +14,7 @@
     [rs.css :as rcss :refer [fr strs]]
 
     [garden.selectors :as gs]
-    [rs.css :as rcss :refer [fr rad deg rotate3d perspective translate strs sassify-rule named?]]
+    [rs.css :as rcss :refer [fr rad deg rotate3d perspective linear-gradient translate strs sassify-rule named?]]
 
     [rs.actions :as actions]
     [clojure.string :as string]
@@ -89,15 +89,13 @@
              (actions/handle-message! {:path path :value (u (js/parseFloat (oget e [:target :value])))}))
     }])
 
-
 (defn text-demo
   "takes the text from the text-input function and displays it in a component"
   [{path  :path
     id    :id
     value :value
     }]
-  [:div {:id id} value]
-  )
+  [:div {:id id} value])
 
 (defn unit-view [{:keys [unit magnitude]}]
   [:div {:title (name unit) :class (str "unit " (if (= "%" (name unit)) "percent" (name unit)))} (str magnitude)])
@@ -106,7 +104,6 @@
   "Returns a view to display a list of things"
   [a-list]
   (into [:div.list]
-
         (map
           (fn [v]
             [:div
@@ -161,6 +158,22 @@
         ])
       a-map)))
 
+(defn frame-inc []
+  (map (fn [x] (keyword (str x "%"))) (range 0 101 1)))
+
+(defn colours []
+  (map (fn [n] (hsl n 50 50))
+       (range 10 360 1)))
+
+(defn animation-rules []
+  [
+   (gt/->CSSAtRule :keyframes
+     {:identifier :gradient-flow
+      :frames (map (fn [n c]
+                  [n {:background (linear-gradient "to bottom" (hsl 180 100 50) c)}])
+                 (frame-inc)
+                 (colours))})])
+
 (defn root-view
   "
    Returns a view component for
@@ -181,8 +194,8 @@
      :as                      state}]
    [:div.root
     [css-view :main-rules {:vendors ["webkit" "moz"] :auto-prefix #{:column-width :user-select}} main-rules]
-    [css-view :animation-rules {} animation-rules]
     [:div.main
+     [css-view :animation-rules {} (animation-rules)]
      [:div.button {:title "reinitialize everything!" :on-click (fn [e] (actions/handle-message! {:clicked :reinitialize}))} "🔄"]
      [:div.things
       [:div.canvas-parameters "Canvas settings"
