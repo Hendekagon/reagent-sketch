@@ -14,6 +14,7 @@
     #?(:cljs [reagent.ratom :as ra])
     #?(:cljs [oops.core :refer [oget ocall]])
     [rs.css :as css :refer [fr strs]]
+    [rs.css.core :as cc]
     [garden.color :as color :refer [hsl rgb rgba hex->rgb as-hex]]
     [garden.units :as u :refer [percent px pt em ms]]
     [clojure.string :as string]))
@@ -34,11 +35,11 @@
         ;These are the parameters of the canvas that the sliders manipulate: they take canvas rules, and pick out the parameters
         :slider-parameters
         [
-         {:unit px :min 0 :max 10 :step 1 :path [:canvas-rules "#canvas" :border 0 0]}
+         {:unit px :min 0 :max 10 :step 1 :path [:css :canvas-rules "#canvas" :border 0 0]}
          {:min 0 :max 360 :step 1 :path
-               [:canvas-rules "#canvas" :background :hue]}
+               [:css :canvas-rules "#canvas" :background :hue]}
          {:unit em :min 0 :max 5 :step 0.2 :path
-                [:canvas-rules "#canvas" :border-radius]}
+                [:css :canvas-rules "#canvas" :border-radius]}
 
          ;{:unit px :min 0 :max 50 :step 0.5 :path
          ;       [:canvas-rules "#demo-button" :box-shadow ::blur]}
@@ -46,11 +47,11 @@
         :slider-button-parameters
         [
          {:min 0 :max 360 :step 1 :path
-               [:canvas-rules "#demo-button" :background :hue]}
+               [:css :canvas-rules "#demo-button" :background :hue]}
          {:unit px :min 0 :max 50 :step 0.5 :path
-                [:canvas-rules "#demo-button" :border-radius]}
+                [:css :canvas-rules "#demo-button" :border-radius]}
          {:unit pt :min 11 :max 20 :step 0.5 :path
-                [:canvas-rules "#demo-button" :font-size]}
+                [:css :canvas-rules "#demo-button" :font-size]}
          ]
 
         :input-text
@@ -59,11 +60,11 @@
       }))
     ([state]
       (-> state
-        css/add-rules
+        cc/add-imported-rules
+        css/add-main-rules
         css/add-canvas-rules
         css/add-units-rules
-        css/add-grid-rules
-        (assoc :animation-rules (css/animation-rules 2000)))))
+        css/add-animation-rules)))
 
 
 (defn initialize-state
@@ -77,15 +78,15 @@
 
 (defn update-colours
   [
-    {
-      {
-       {{h :hue l :lightness} :background} "#canvas"
-        button "#demo-button"
-      } :canvas-rules
-      :as state
+   {
+    {{
+      {{h :hue l :lightness} :background} "#canvas"
+      button                              "#demo-button"
+      } :canvas-rules} :css
+    :as state
     }
   ]
-  (update-in state [:canvas-rules "#demo-button" :background]
+  (update-in state [:css :canvas-rules "#demo-button" :background]
     (fn [colour]
       (let [[nh nl] (colour-coupling h l)]
         (assoc colour :hue nh :lightness nl)))))
@@ -118,4 +119,3 @@
   ([message a-function]
     (swap! app-state
       (fn [current-state] (a-function current-state message)))))
-
