@@ -121,10 +121,12 @@
                               :display     :flex
                               :flex-flow   "column nowrap"
                               :font-family ["Gill Sans" "Helvetica" "Sans Serif"]
+                              :font-weight :normal
+                              :font-size   (em 1)
                               }
      :.imported-rules         {
                                 :background  :black
-                                :color       :white
+                                :color       (rgb 240 240 240)
                                 :width       (percent 100)
                                 :height      (percent 100)
                                 :display     :flex
@@ -132,19 +134,22 @@
                                 :font-size   (em 0.7)
                               }
      :.imported-rule         {:display :flex :flex-flow "row wrap" :margin (px 1)}
-     :.selector              {:background (rgb 40 40 40) :display :flex :flex-flow "row wrap" :width (em 16) :margin 0}
+     :.selector              {:background (rgb 40 40 40) :display :flex :flex-flow "row wrap" :width (em 16) :margin 0 :padding (em 0.5)}
      :.rule                  {:display :flex :width (em 32) :background (rgb 50 50 50) :margin 0}
-     :.colours               {:display :flex :flex-flow "row wrap"}
-     :.colour                {:display :flex :width (px 32) :height (px 32)}
+     :.colours               {:display :flex :flex-flow "row wrap" :background (rgb 100 100 100) :margin (em 1)}
+     :.colour-previews       {:display :flex :flex-flow "row wrap" :padding (em 1)}
+     :.colour                {:display :flex :min-width (px 8) :min-height (px 8) :max-width (px 32) :max-height (px 32)}
+     :.colour-swatch         {:display :flex :min-width (px 24) :min-height (px 24) :max-width (px 64) :max-height (px 64)
+                              :margin (px 8)}
      :.table
        {
         :padding               (em 1)
         :display               :grid
         :color                 :white
-        :grid-template-columns [[(percent 50) (fr 1)]]
-        :grid-auto-rows        (em 1.3)
-        :grid-row-gap          (em 0.5)
-        :grid-column-gap       (em 1)
+        :grid-template-columns [[(percent 70) (fr 1)]]
+        :grid-auto-rows        (em 1.5)
+        :grid-row-gap          (em 0.7)
+        :grid-column-gap       (em 2)
         }
      ".things"
                              {

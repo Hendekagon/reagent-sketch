@@ -155,7 +155,7 @@
           (or (list? v) (vector? v)) [:div [listy-view v]]
           :otherwise [:div (str v)])
         ])
-      a-map)))
+      (sort-by key a-map))))
 
 (defn root-view
   "
@@ -180,11 +180,6 @@
     [css-view :animation-rules {} animation-rules]
     [:div.main
      [:div.button {:title "reinitialize everything!" :on-click (fn [e] (actions/handle-message! {:clicked :reinitialize}))} "🔄"]
-     #_(into [:div.imported-rules]
-      (map (fn [[k v]] [:div.imported-rule [:div.imported-rule.selector (str k)] [:div.imported-rule.rule (str v)]]) (:base imported)))
-     (into [:div.colours]
-      (map (fn [c] [:div.colour {:style {:background (css/css-str c)}}])
-        (into #{} (mapcat (fn [[k v]] [(get v "color")]) (:base imported)))))
      [:div.things
       [:div.canvas-parameters "Canvas settings"
        [css-view :canvas-rules {:vendors ["webkit" "moz" "o" "ms"] :auto-prefix #{:appearance}} canvas-rules]
@@ -219,9 +214,11 @@
     [css-view :animation-rules {} animation-rules]
     [css-view :units-rules {} units-rules]
     [:div.main
-     (into [:div.colours]
-      (map (fn [c] [:div.colour {:style {:background (css/css-str c)}}])
-        (into #{} (mapcat (fn [[k v]] [(get v "color")]) (mapcat val imported)))))
+     [:div.colour-previews
+      [:div "Unique Colours"]
+      (into [:div.colours]
+        (map (fn [c] [:div.colour-swatch {:style {:background (css/css-str c)}}])
+          (into #{} (mapcat (fn [[k v]] [(get v "color")]) (mapcat val imported)))))]
      (into [:div.imported-rules]
       (map
        (fn [[k v]] [:div.imported-rule [:div.imported-rule.selector (str k)]
