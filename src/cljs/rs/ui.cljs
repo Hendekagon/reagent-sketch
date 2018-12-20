@@ -15,4 +15,4 @@
   (when (or true (nil? @actions/app-state))
     (do
       (reset! actions/app-state (actions/make-state))))
-  (r/render [views/boot-view] (.getElementById js/document "app")))
+  (r/render [views/root-view] (.getElementById js/document "app")))

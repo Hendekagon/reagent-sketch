@@ -157,6 +157,34 @@
         ])
       (sort-by key a-map))))
 
+
+(defn animation-rules []
+  [
+   (gt/->CSSAtRule :keyframes
+                   {:identifier :rotation
+                    :frames
+                      [
+                       [:0% {:transform (translate (percent 0) (percent 0))}]
+                       [:25% {:transform (translate (percent 0) (percent -25))}]
+                       [:50% {:transform (translate (percent -25) (percent 0))}]
+                       [:75% {:transform (translate (percent 0) (percent 25))}]
+                       [:100% {:transform (translate (percent 0) (percent 0))}]
+                       ]
+                    })
+   ["#card1"
+    {
+     :background                (hsla 168 100 80 1)
+     :height                    (px 200)
+     :width                     (px 200)
+     :display                   "table"
+     :margin                    "auto"
+     :animation-name            :rotation
+     :animation-duration        (ms 10000)
+     :animation-iteration-count :infinite
+     :animation-timing-function :linear
+     }]])
+
+
 (defn root-view
   "
    Returns a view component for
@@ -172,27 +200,15 @@
      slider-button-parameters :slider-button-parameters
      {main-rules      :main-rules
       canvas-rules    :canvas-rules
-      animation-rules :animation-rules imported :imported} :css
+      ;animation-rules :animation-rules
+      imported :imported} :css
                               {t :text} :input-text
                               :as state}]
    [:div.root
     [css-view :main-rules {:vendors ["webkit" "moz"] :auto-prefix #{:column-width :user-select}} main-rules]
-    [css-view :animation-rules {} animation-rules]
+    [css-view :animation-rules {} (animation-rules)]
     [:div.main
-     [:div.button {:title "reinitialize everything!" :on-click (fn [e] (actions/handle-message! {:clicked :reinitialize}))} "🔄"]
-     [:div.things
-      [:div.canvas-parameters "Canvas settings"
-       [css-view :canvas-rules {:vendors ["webkit" "moz" "o" "ms"] :auto-prefix #{:appearance}} canvas-rules]
-       [sliders-view (map (fn [{path :path :as parameter}] (assoc parameter :value (get-in state path))) slider-parameters)]
-       ]
-      [:div {:id "canvas"}
-       [:div {:id "button-wrapper"}
-        [:div {:id "demo-button"} [text-demo {:id "text-demo" :path [:input-text :text] :value t}]]]]
-      [:div.button-parameters "Button settings"
-       [sliders-view (map (fn [{path :path :as parameter}] (assoc parameter :value (get-in state path))) slider-button-parameters)]
-       ]
-      [input-text-view {:id "input-text" :path [:input-text :text] :value t}]
-      ]
+      [:div#card1 "hi!"]
      ]]))
 
 (defn boot-view
@@ -219,6 +235,9 @@
       (into [:div.colours]
         (map (fn [c] [:div.colour-swatch {:style {:background (css/css-str c)}}])
           (into #{} (mapcat (fn [[k v]] [(get v "color")]) (mapcat val imported)))))]
+     #_(into [:div [:div "Unique properties"]]
+       (map (fn [[k v]] [:div [:div (str k)] [:div (str v)]])
+         (into #{} (mapcat last (mapcat val imported)))))
      (into [:div.imported-rules]
       (map
        (fn [[k v]] [:div.imported-rule [:div.imported-rule.selector (str k)]
