@@ -9,11 +9,10 @@
 
 (defn ^:before-load before-start!
   [& q]
-  (println "---before restart---"))
+  (println "---before restart--- "))
 
 (defn ^:after-load start! []
   (when (or true (nil? @actions/app-state))
     (do
       (reset! actions/app-state (actions/make-state))))
-  (r/render [views/extraction-view]
-     (.getElementById js/document "app")))
+  (r/render [views/boot-view] (.getElementById js/document "app")))

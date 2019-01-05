@@ -4,9 +4,11 @@
   (:require
     [garden.color :as color :refer [hsl hsla rgb rgba hex->rgb as-hex]]
     [garden.units :as u :refer [defunit px percent pt em ms]]
-    [garden.core :refer [css]]
+    [garden.core :as gc :refer [css]]
+    [garden.compiler :as gcomp]
     [garden.types :as gt]
     [garden.stylesheet :refer [at-media]]
+    #?(:cljs [cljs.tools.reader :refer [read-string]])
     [clojure.string :as string]))
 
 
@@ -31,6 +33,9 @@
 (defn rotate3d [& d]    (gt/->CSSFunction "rotate3d" d))
 (defn perspective [& d] (gt/->CSSFunction "perspective" d))
 (defn linear-gradient [& d] (gt/->CSSFunction "linear-gradient" d))
+
+
+(def css-str (comp first gcomp/render-css gcomp/expand))
 
 (defn strs
   "Returns a string representation of the given list of lists
@@ -69,41 +74,38 @@
 ; --- rules ---
 
 
-
-
 (defn add-canvas-rules [state]
   (-> state
       (assoc-in [:css :canvas-rules]
-             {
-              "#canvas"
-                                {
-                                 :border        [[(px 0) :solid (rgb 86 86 86)]]
-                                 :background    (hsla 210 70 85 1)
-                                 :border-radius (em 0)
-                                 :width         (percent 90)
-                                 :height        (px 500)
-                                 :display       "table"
-                                 }
-              "#button-wrapper" {
-                                 :display        "table-cell"
-                                 :vertical-align "middle"
-                                 }
-              "#demo-button"    {
-                                 :background    (hsl 109 100 70)
-                                 :max-width     (px 100)
-                                 :height        (px 50)
-                                 :overflow      "hidden"
-                                 :padding       (px 10)
-                                 :display       "flex"
-                                 :margin        "auto"
-                                 :border-radius (em 1)
-                                 :font-size     (pt 16)
-                                 :border-width  (px 1)
-                                 :box-shadow    [[(px 0) (px 0) (px 10) (hsl 0 0 0)]]
-                                 :text-align    "center"
-                                 :text-shadow [[(px 1) (px 0.5) (px 0.5) (hsl 0 0 0)]]
-                                 }
-              })))
+        {
+         "#canvas"
+                           {
+                            :border        [[(px 0) :solid (rgb 86 86 86)]]
+                            :background    (hsla 210 70 85 1)
+                            :border-radius (em 0)
+                            :width         (percent 90)
+                            :height        (px 500)
+                            :display       "table"
+                            }
+         "#button-wrapper" {
+                            :display        "table-cell"
+                            :vertical-align "middle"
+                            }
+         "#demo-button"    {
+                            :background    (hsl 109 100 70)
+                            :max-width     (px 100)
+                            :height        (px 50)
+                            :overflow      "hidden"
+                            :padding       (em 0.5)
+                            :display       :flex
+                            :margin        "auto"
+                            :border-radius (px 4)
+                            :font-size     (pt 16)
+                            :border-width  (px 1)
+                            :justify-content :center
+                            :align-items :center
+                            }
+         })))
 
 
 (defn add-main-rules [state]
@@ -111,28 +113,49 @@
     {
      :.main
                              {
-                              :background  (linear-gradient "to bottom" (rgba 216, 215, 215, 0.3) :blue)
-                              :text-shadow [[(px 0) (px 0) (px 3) (hsl 0 0 0)] [(px 1) (px 0) (px 1) (hsl 65 49 67)]]
+                              :background  (rgb 30 30 30)
                               :color       (hsl 0 0 100)
                               :width       (percent 100)
                               :height      (percent 100)
                               :display     :flex
                               :flex-flow   "column nowrap"
-
+                              :font-family ["Gill Sans" "Helvetica" "Sans Serif"]
+                              :font-weight :normal
+                              :font-size   (em 1)
                               }
-     :.demo-grid
-                             {
-                              :padding       (em 2)
-                              :border-radius (px 8)
-                              :display       :grid
-                              :background    (hsl 137 96 80)
-
+     :.imported-rules         {
+                                :background  :black
+                                :color       (rgb 240 240 240)
+                                :width       (percent 100)
+                                :height      (percent 100)
+                                :display     :flex
+                                :flex-flow   "row wrap"
+                                :font-size   (em 0.7)
                               }
+     :.imported-rule         {:display :flex :flex-flow "row wrap" :margin (px 1)}
+     :.selector              {:background (rgb 40 40 40) :display :flex :flex-flow "row wrap" :width (em 16) :margin 0 :padding (em 0.5)}
+     :.rule                  {:display :flex :width (em 32) :background (rgb 50 50 50) :margin 0}
+     :.colours               {:display :flex :flex-flow "row wrap" :background (rgb 100 100 100) :margin (em 1)}
+     :.colour-previews       {:display :flex :flex-flow "row wrap" :padding (em 1)}
+     :.colour                {:display :flex :min-width (px 8) :min-height (px 8) :max-width (px 32) :max-height (px 32)}
+     :.colour-swatch         {:display :flex :min-width (px 24) :min-height (px 24) :max-width (px 64) :max-height (px 64)
+                              :margin (px 8)}
+     :.css-urls {:display :none}
+     :.table
+       {
+        :padding               (em 1)
+        :display               :grid
+        :color                 :white
+        :grid-template-columns [[(percent 70) (fr 1)]]
+        :grid-auto-rows        (em 1.5)
+        :grid-row-gap          (em 0.7)
+        :grid-column-gap       (em 2)
+        }
      ".things"
                              {
-                              :display               'grid
+                              :display               :grid
                               :grid-area             :content
-                              :grid-template-columns [[(percent 20) (percent 80)]]
+                              :grid-template-columns [[(percent 20) (fr 1)]]
                               :grid-column-gap       (em 1)
                               :grid-auto-rows        :auto
                               :grid-row-gap          (em 2.5)
@@ -140,12 +163,8 @@
                               :padding               (percent 4)
                               }
      :body                   {
-                              :animation-name            :gradient-flow
-                              :animation-duration        (ms 10000)
-                              :animation-iteration-count :infinite
-                              :animation-timing-function :linear
-                              :background                (linear-gradient "to top" :gray :white)
-                              :margin                    (percent 1)
+
+                              :background                (rgb 30 30 30)
                               :font-family               ["Gill Sans" "Helvetica" "Verdana" "Sans Serif"]
                               :font-size                 (em 1)
                               :font-weight               :normal
@@ -185,12 +204,12 @@
                 :align-items     :center
                 :min-width       (em 2)
                 :border-radius   (px 4)
-                :border          [[:solid (rgb 200 200 200) (px 1)]]
+                :border          :none
                 :background      (rgb 150 150 150)
                 :padding         (em 0.1)
                 }
      :.em      {:background (hsl 150 50 50) :color (hsl 150 20 10)}
-     :.px      {:background (hsl 10 70 80) :color (hsl 15 20 10)}
+     :.px      {:background (hsl 30 30 70) :color (hsl 15 20 10)}
      :.percent {:background (hsl 50 70 80) :color (hsl 15 20 10)}
      :.fr      {:background (hsl 200 70 80) :color (hsl 15 20 10)}}))
 
@@ -205,22 +224,6 @@
                     [:50% {:background (linear-gradient "to top" (rgb 255 255 255) (rgb 150 150 150))}]
                     [:100% {:background (linear-gradient "to top" (rgb 100 100 100) (rgb 255 255 255))}]]})
     ]))
-
-
-(defn add-grid-rules [state]
-  (assoc-in state [:css :demo]
-    {
-     :.demo-grid
-       {
-        :padding               (em 1)
-        :border-radius         (px 8)
-        :display               :grid
-        :background            (hsl 197 31 49)
-        :grid-template-columns [[(percent 20) (fr 1)]]
-        :grid-auto-rows        (em 1.3)
-        :grid-row-gap          (em 1)
-        :grid-column-gap       (em 1)
-        }}))
 
 (defn summarize [v]
   (cond
@@ -242,3 +245,69 @@
           (keyword
             (str (if (keyword? k) (name k) (str k)) "_" (summarize v))))
       (distinct (mapcat last (mapcat identity (vals rule-maps)))))))
+
+(defn parse-colour
+  ([s]
+   (parse-colour s (string/split s #"\,|\(|\)")))
+  ([s [t & a]]
+   (if a
+     (let [a (map read-string a)]
+      (case t
+        "rgb" (apply rgb a)
+        "rgba" (apply rgba a)
+        "hsl" (apply hsl a)
+        "hsla" (apply hsla a)
+        (keyword "css-variable" s)))
+     (keyword "css-variable" s))))
+
+(defn parse-unit
+  ([s]
+   (parse-unit s (rest (first (re-seq #"(\d+)(\D+)" s)))))
+  ([s [x t]]
+   (let [v (read-string x)]
+    (case t
+      "%"  (percent v)
+      "px" (px v)
+      "em" (em v)
+      "fr" (fr v)
+      "rem" (u/rem v)
+      "s"   (u/s v)
+      "ms"  (ms v)
+      s))))
+
+(defn unit [v]
+  (#{"px" "%" "em" "fr" "rem" "ms" "s"} (last (last (re-seq #"(\d+)(\D+)" v)))))
+
+(defn colour-fn-name [v]
+  (#{"rgb" "rgba" "hsl" "hsla"} (first (string/split v #"\,|\(|\)"))))
+
+(defn css-list? [v]
+  (> (count (string/split v #"[^\,]\s+")) 1))
+
+(defn css-number? [v]
+  (re-matches #"\d+" v))
+
+(defn parse-what [k v]
+  (cond
+    (css-list? v) :list
+    (or (string/ends-with? k "color") (colour-fn-name v)) :colour
+    (unit v) :unit
+    (css-number? v) :number
+    :otherwise :default))
+
+(defmulti parse-value parse-what)
+
+(defmethod parse-value :default [k v]
+  v)
+
+(defmethod parse-value :number [k v]
+  (read-string v))
+
+(defmethod parse-value :colour [k v]
+  (parse-colour v))
+
+(defmethod parse-value :unit [k v]
+  (parse-unit v))
+
+(defmethod parse-value :list [k v]
+  (mapv (partial parse-value :list) (string/split (string/replace v #",\s+" ",") #"\s+")))

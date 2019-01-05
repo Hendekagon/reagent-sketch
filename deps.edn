@@ -1,16 +1,18 @@
 {
-  :paths ["src/clj" "src/cljc" "src/cljs" "resources"]
-  :deps
+ :paths ["src/cljc" "src/cljs"]
+ :deps
         {
-           org.clojure/clojure                    {:mvn/version "1.10.0-RC1"}
-           org.clojure/clojurescript              {:mvn/version "1.10.439"}
-           com.cognitect/transit-clj              {:mvn/version "0.8.313"}
-           com.cognitect/transit-cljs             {:mvn/version "0.8.256"}
-           com.bhauman/figwheel-main              {:mvn/version "0.1.9"}
-           com.bhauman/rebel-readline-cljs        {:mvn/version "0.1.4"}
+         org.clojure/clojure             {:mvn/version "1.10.0-RC1"}
+         org.clojure/clojurescript       {:mvn/version "1.10.439"}
+         com.cognitect/transit-clj       {:mvn/version "0.8.313"}
+         com.cognitect/transit-cljs      {:mvn/version "0.8.256"}
+         com.bhauman/figwheel-main       {:mvn/version "0.1.9"}
+         com.bhauman/rebel-readline-cljs {:mvn/version "0.1.4"}
+         cljs-ajax                       {:mvn/version "0.7.5"}
+         sablono                         {:mvn/version "0.8.5"}
 
-           binaryage/oops                         {:mvn/version "0.6.2"}
-           reagent                                {:mvn/version "0.8.1"}
-           garden                                 {:mvn/version "1.3.6"}
+         binaryage/oops                  {:mvn/version "0.6.2"}
+         reagent                         {:mvn/version "0.8.1"}
+         garden                          {:mvn/version "1.3.6"}
          }
-}
+ }

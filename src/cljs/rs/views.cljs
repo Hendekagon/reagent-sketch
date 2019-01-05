@@ -5,15 +5,15 @@
   "
   (:require
     [oops.core :refer [oget]]
-    [cognitect.transit :as t]
     [garden.core :as gc :refer [css]]
     [garden.color :as color :refer [hsl rgb hsla rgba hex->rgb as-hex]]
     [garden.units :as u :refer [px pt em ms percent defunit]]
     [garden.types :as gt]
     [garden.selectors :as gs]
-    [rs.css :as rcss :refer [fr rad deg rotate3d perspective translate strs sassify-rule named?]]
+    [rs.css :as rcss :refer [parse-value fr rad deg rotate3d perspective translate strs sassify-rule named?]]
     [rs.actions :as actions]
-    [clojure.string :as string]))
+    [clojure.string :as string]
+    [rs.css :as css]))
 
 
 (defn css-view
@@ -108,7 +108,7 @@
              (cond
                (:magnitude v) [unit-view v]
                (:hue v) (str "(hsl " (string/join " " [(:hue v) (:saturation v) (:lightness v)]) ")")
-               (seqable? v) [listy-view v]
+               (or (list? v) (vector? v)) [listy-view v]
                :otherwise (str v))])
           a-list)))
 
@@ -144,17 +144,45 @@
   "Returns a view to display a table
    of the given map's key-value pairs"
   [a-map]
-  (into [:div.demo-grid]
+  (into [:div.table {:title (str a-map)}]
     (mapcat
       (fn [[k v]]
-       [[:div (str (name k))]
+       [[:div (str (if (keyword? k) (name k) k))]
         (cond
           (:magnitude v) [unit-view v]
-          (:hue v) [:div (str "(hsl " (string/join " " [(:hue v) (:saturation v) (:lightness v)]) ")")]
-          (seqable? v) [:div [listy-view v]]
+          (or (:red v) (:hue v))       [:div.colour {:style {:background (css/css-str v)}}]
+          (or (list? v) (vector? v)) [:div [listy-view v]]
           :otherwise [:div (str v)])
         ])
-      a-map)))
+      (sort-by key a-map))))
+
+
+(defn animation-rules []
+  [
+   (gt/->CSSAtRule :keyframes
+                   {:identifier :rotation
+                    :frames
+                      [
+                       [:0% {:transform (translate (percent 0) (percent 0))}]
+                       [:25% {:transform (translate (percent 0) (percent -25))}]
+                       [:50% {:transform (translate (percent -25) (percent 0))}]
+                       [:75% {:transform (translate (percent 0) (percent 25))}]
+                       [:100% {:transform (translate (percent 0) (percent 0))}]
+                       ]
+                    })
+   ["#card1"
+    {
+     :background                (hsla 168 100 80 1)
+     :height                    (px 200)
+     :width                     (px 200)
+     :display                   "table"
+     :margin                    "auto"
+     :animation-name            :rotation
+     :animation-duration        (ms 10000)
+     :animation-iteration-count :infinite
+     :animation-timing-function :linear
+     }]])
+
 
 (defn root-view
   "
@@ -171,92 +199,63 @@
      slider-button-parameters :slider-button-parameters
      {main-rules      :main-rules
       canvas-rules    :canvas-rules
-      animation-rules :animation-rules} :css
+      ;animation-rules :animation-rules
+      imported :imported} :css
+                              {t :text} :input-text
+                              :as state}]
+   [:div.root
+    [css-view :main-rules {:vendors ["webkit" "moz"] :auto-prefix #{:column-width :user-select}} main-rules]
+    [css-view :animation-rules {} (animation-rules)]
+    [:div.main
+      [:div#card1 "hi!"]
+     ]]))
+
+(defn extraction-view
+  "
+    A view that converts the given
+    local CSS files into .edn files
+  "
+  ([urls]
+   (into [:div.css-urls]
+     (map-indexed
+       (fn [i n]
+         [:link {:type    "text/css" :rel "stylesheet" :href (str "css/" n) :title (name n)
+                 :id      (name n)
+                 :on-load (fn [e] (actions/handle-message! {:action :css-loaded :id n :index i}))}])
+       urls))))
+
+(defn boot-view
+  "
+
+  "
+  ([] (boot-view @actions/app-state))
+  ([{
+     slider-parameters        :slider-parameters
+     slider-button-parameters :slider-button-parameters
+     urls :css-urls
+     {main-rules      :main-rules
+      canvas-rules    :canvas-rules
+      units-rules     :units
+      animation-rules :animation-rules imported :imported} :css
                               {t :text} :input-text
                               :as state}]
    [:div.root
     [css-view :main-rules {:vendors ["webkit" "moz"] :auto-prefix #{:column-width :user-select}} main-rules]
     [css-view :animation-rules {} animation-rules]
+    [css-view :units-rules {} units-rules]
+    [extraction-view urls]
     [:div.main
-     [:div.button {:title "reinitialize everything!" :on-click (fn [e] (actions/handle-message! {:clicked :reinitialize}))} "🔄"]
-     [:div.things
-      [:div.canvas-parameters "Canvas settings"
-       [css-view :canvas-rules {:vendors ["webkit" "moz" "o" "ms"] :auto-prefix #{:appearance}} canvas-rules]
-       [sliders-view (map (fn [{path :path :as parameter}] (assoc parameter :value (get-in state path))) slider-parameters)]
-       ]
-      [:div {:id "canvas"}
-       [:div {:id "button-wrapper"}
-        [:div {:id "demo-button"} [text-demo {:id "text-demo" :path [:input-text :text] :value t}]]]]
-      [:div.button-parameters "Button settings"
-       [sliders-view (map (fn [{path :path :as parameter}] (assoc parameter :value (get-in state path))) slider-button-parameters)]
-       ]
-      [input-text-view {:id "input-text" :path [:input-text :text] :value t}]
-      ]
+     [:div.colour-previews
+      [:div "Unique Colours"]
+      (into [:div.colours]
+        (map (fn [c] [:div.colour-swatch {:style {:background (css/css-str c)}}])
+          (into #{} (mapcat (fn [[k v]] [(get v "color")]) (mapcat val imported)))))]
+     #_(into [:div [:div "Unique properties"]]
+       (map (fn [[k v]] [:div [:div (str k)] [:div (str v)]])
+         (into #{} (mapcat last (mapcat val imported)))))
+     (into [:div.imported-rules]
+      (map
+       (fn [[k v]] [:div.imported-rule [:div.imported-rule.selector (str k)]
+                  [:div.imported-rule.rule [table-view v]]])
+        (mapcat val imported)))
      ]]))
-
-(defn parse-colour
-  ([s]
-   (parse-colour s (string/split s #"\,|\(|\)")))
-  ([s [t & a]]
-    (case t
-      "rgb"  (apply rgb a)
-      "rgba" (apply rgba a)
-      "hsl"  (apply hsl a)
-      "hsla" (apply hsla a)
-      s)))
-
-(defn parse-unit
-  ([s]
-   (parse-unit s (reverse (re-seq #"\D|\d+" s))))
-  ([s [t x]]
-   (let [v (.parseFloat js/Number x)]
-    (case t
-      "%"  (percent v)
-      "px" (px v)
-      "em" (em v)
-      v))))
-
-(defn parse-value [k v]
-  (case (or (#{"color" "background-color"} k) (str (last v)))
-    "color" (parse-colour v)
-    "background-color" (parse-colour v)
-    "%" (parse-unit v)
-    v))
-
-(defn to-clj [s]
-  (reduce
-    (fn [r i]
-      (assoc r (.item s i) (parse-value (.item s i) (.getPropertyValue s (.item s i)))))
-    {} (range (.-length s))))
-
-(defn to-transit [state]
-  (t/write (t/writer :json-verbose) state))
-
-(defn download!
-  ([tipe naym contents]
-    (println "download  as" tipe naym)
-    (let [
-          a (.createElement js/document "a")
-          f (js/Blob. (clj->js [contents]) {:type (name tipe)})
-          ]
-      (set! (.-href a) (.createObjectURL js/URL f))
-      (set! (.-download a) (str naym "." (name tipe)))
-      (println "<a>" a)
-      (.dispatchEvent a (js/MouseEvent. "click")))))
-
-(defn extraction-view
-  ([]
-   (let [element-types ["div" "span" "body"]]
-     [:div
-     [:link {:type "text/css" :rel "stylesheet"
-             :href "bootstrap.min.css" :on-load
-                   (fn [e]
-                     (println "loaded")
-                     (let [s (.-cssRules (aget (.. js/document -styleSheets) 0))
-                           sr (reduce
-                                (fn [r [selector style]]
-                                  (assoc r selector (to-clj style)))
-                                {} (remove (fn [[k v]] (or (nil? k) (nil? v))) (map (fn [i] [(.-selectorText (.item s i)) (.-style (.item s i))]) (range (.-length s)))))]
-                       ;(doseq [[k v] sr] (println k "   " v))
-                       (download! "edn" "style" (str sr))
-                       ))}]])))
