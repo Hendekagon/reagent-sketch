@@ -34,8 +34,14 @@
         (fn [[f & _ :as l]]
           (if (or (string? f) (named? f))
             (map sassify-rule (partition 2 l)) l))
-(if (map? rules) rules (partition-by :identifier rules))))]))
+    (if (map? rules) rules (partition-by :identifier rules))))]))
 
+(defn on [{{c :convert :or {c identity} prevent-default? :prevent-default?} :params :as message}]
+  (fn [e]
+    (let [v (try (oget e [:target :value])
+              (catch js/Error error nil))]
+      (actions/handle-message!
+       (assoc-in message [:params :target :value] (c v))))))
 
 (defn input-text-view
   "
@@ -92,24 +98,29 @@
     id    :id
     value :value
     }]
-  [:div {:id id} value]
-  )
+  [:div {:id id} value])
 
-(defn unit-view [{:keys [unit magnitude]}]
-  [:div {:title (name unit) :class (str "unit " (if (= "%" (name unit)) "percent" (name unit)))} (str magnitude)])
+(defn unit-view [{{:keys [unit magnitude]} :value path :path}]
+  [:div {:title (name unit) :class (str "unit " (if (= "%" (name unit)) "percent" (name unit)))}
+    (str magnitude (name unit))])
+
+(defn colour-view [{colour :value path :path}]
+  [:input {:type :color :value (css/css-str colour)
+           :on-input (on {:change :colour-swatch :params {:path path :convert hex->rgb}})
+           :on-change (on {:change :colour-swatch :params {:path path :convert hex->rgb}})
+           }])
 
 (defn listy-view
   "Returns a view to display a list of things"
-  [a-list]
+  [{a-list :value path :path}]
   (into [:div.list]
-
-        (map
-          (fn [v]
-            [:div
+        (map-indexed
+          (fn [i v]
+            [:div.list-item
              (cond
-               (:magnitude v) [unit-view v]
-               (:hue v) (str "(hsl " (string/join " " [(:hue v) (:saturation v) (:lightness v)]) ")")
-               (or (list? v) (vector? v)) [listy-view v]
+               (:magnitude v) [unit-view {:value v :path (conj path i)}]
+               (or (:red v) (:hue v)) [colour-view {:colour v :path (conj path i)}]
+               (or (list? v) (vector? v)) [listy-view {:value v :path (conj path i)}]
                :otherwise (str v))])
           a-list)))
 
@@ -129,30 +140,18 @@
              ])
           parameter-maps)))
 
-;(defn colours [canvas-colours button-colours]
-;  ([canvas-colours :hue :lightness]
-;    [{
-;      :hue       hue
-;      :lightness lightness
-;
-;      }
-;     (+ hue 180 )
-;     (+ lightness 30)])
-;
-;  )
-
 (defn table-view
   "Returns a view to display a table
    of the given map's key-value pairs"
-  [a-map]
+  [{a-map :value path :path}]
   (into [:div.table {:title (str a-map)}]
     (mapcat
       (fn [[k v]]
        [[:div (str (if (keyword? k) (name k) k))]
         (cond
-          (:magnitude v) [unit-view v]
-          (or (:red v) (:hue v))       [:div.colour {:style {:background (css/css-str v)}}]
-          (or (list? v) (vector? v)) [:div [listy-view v]]
+          (:magnitude v) [unit-view {:value v :path (conj path k)}]
+          (or (:red v) (:hue v)) [colour-view {:value v :path (conj path k)}]
+          (or (seqable? v) (list? v) (vector? v)) [listy-view {:value v :path (conj path k)}]
           :otherwise [:div (str v)])
         ])
       (sort-by key a-map))))
@@ -200,16 +199,25 @@
      slider-button-parameters :slider-button-parameters
      {main-rules      :main-rules
       canvas-rules    :canvas-rules
-      ;animation-rules :animation-rules
+      animation-rules :animation-rules
       imported :imported} :css
-                              {t :text} :input-text
-                              :as state}]
+      {t :text} :input-text
+      :as state}]
    [:div.root
     [css-view :main-rules {:vendors ["webkit" "moz"] :auto-prefix #{:column-width :user-select}} main-rules]
     [css-view :animation-rules {} (animation-rules)]
     [:div.main
       [:div#card1 "hi!"]
      ]]))
+
+(defn rule-view [{:keys [value display-path selector display] :as rule}]
+  [:div.imported-rule
+    [:div.imported-rule.selector
+     {:on-click (on {:click :rule :params {:path display-path :value value :with display}})}
+      (str selector)]
+     [:div {:class (str "imported-rule.rule." display)}
+      (when (not (nil? display))
+        [table-view rule])]])
 
 (defn boot-view
   "
@@ -222,7 +230,9 @@
      {main-rules      :main-rules
       canvas-rules    :canvas-rules
       units-rules     :units
-      animation-rules :animation-rules imported :imported} :css
+      display         :display
+      animation-rules :animation-rules
+      imported :imported} :css
                               {t :text} :input-text
                               :as state}]
    [:div.root
@@ -235,14 +245,20 @@
       (into [:div.colours]
         (map (fn [c] [:div.colour-swatch {:style {:background (css/css-str c)}}])
           (into #{} (mapcat (fn [[k v]] [(get v "color")]) (mapcat val imported)))))]
-     #_(into [:div [:div "Unique properties"]]
-       (map (fn [[k v]] [:div [:div (str k)] [:div (str v)]])
-         (into #{} (mapcat last (mapcat val imported)))))
+     #_[:div.unique-properties [:div "Unique properties"]
+     [table-view {:value (into {} (map (juxt key (comp (partial map last) val)) (group-by first (distinct (mapcat last (mapcat val imported))))))}]]
      (into [:div.imported-rules]
-      (map
-       (fn [[k v]] [:div.imported-rule [:div.imported-rule.selector (str k)]
-                  [:div.imported-rule.rule [table-view v]]])
-        (mapcat val imported)))
+       (map
+         (fn [[ik im]]
+           (if (= :folded (get-in display [ik :self]))
+             [:div.imported-ruleset [:div.ruleset-title (str ik)]]
+             (into [:div.imported-ruleset [:div.ruleset-title (str ik)]]
+              (map
+                (fn [[k v]]
+                  [rule-view {:value v :selector k :path [:css :imported ik k]
+                              :display-path [:css :display ik k] :display (get-in display [ik k])}])
+                im))))
+         imported))
      ]]))
 
 

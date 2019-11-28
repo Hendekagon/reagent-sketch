@@ -14,5 +14,5 @@
 (defn ^:after-load start! []
   (when (or true (nil? @actions/app-state))
     (do
-      (reset! actions/app-state (actions/make-state))))
-  (r/render [views/root-view] (.getElementById js/document "app")))
+      (reset! actions/app-state (actions/initialize-state))))
+  (r/render [views/boot-view] (.getElementById js/document "app")))
