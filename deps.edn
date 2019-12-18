@@ -9,7 +9,6 @@
          com.bhauman/figwheel-main       {:mvn/version "0.1.9"}
          com.bhauman/rebel-readline-cljs {:mvn/version "0.1.4"}
          cljs-ajax                       {:mvn/version "0.7.5"}
-         sablono                         {:mvn/version "0.8.5"}
 
          binaryage/oops                  {:mvn/version "0.6.2"}
          reagent                         {:mvn/version "0.8.1"}

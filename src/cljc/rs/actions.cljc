@@ -13,9 +13,9 @@
     [garden.core :as gc]
     #?(:cljs [reagent.ratom :as ra])
     #?(:cljs [oops.core :refer [oget ocall]])
-    [rs.css :as css :refer [fr strs parse-value]]
+    [rs.css.core  :refer [fr strs parse-value]]
+    [rs.css :as css]
     [cognitect.transit :as t]
-    ;[rs.css.core :as cc]
     [garden.color :as color :refer [hsl rgb rgba hex->rgb as-hex]]
     [garden.units :as u :refer [percent px pt em ms]]
     [ajax.core :refer [GET]]
@@ -78,7 +78,7 @@
                (fn [r [selector style]]
                  (assoc-in r [:css :imported id selector] (to-clj style)))
                state (remove (fn [[k v]] (or (nil? k) (nil? v)))
-                       (map (fn [i] [(.-selectorText (.item rules i)) (.-style (.item rules i))])
+                       (map (fn [i] [(str (string/replace id "." "-") ".enabled" (.-selectorText (.item rules i))) (.-style (.item rules i))])
                          (range (.-length rules))))))))
 
 (defn make-state

@@ -8,71 +8,8 @@
     [garden.compiler :as gcomp]
     [garden.types :as gt]
     [garden.stylesheet :refer [at-media]]
-    #?(:cljs [cljs.tools.reader :refer [read-string]])
+    [rs.css.core :refer [fr rad deg rotate translate scale linear-gradient]]
     [clojure.string :as string]))
-
-
-; Garden doesn't have grid-layout's fr unit by default,
-; but it provides the defunit macro to create new units
-; so let's define it
-
-; define some CSS units missing from garden.units:
-
-
-(defunit fr)
-(defunit rad)
-(defunit deg)
-
-; and some CSS functions for animations
-
-(defn rotate [& d]      (gt/->CSSFunction "rotate" d))
-(defn translate [& d]   (gt/->CSSFunction "translate" d))
-(defn scale [& d]       (gt/->CSSFunction "scale" d))
-(defn translate3d [& d] (gt/->CSSFunction "translate3d" d))
-(defn scale3d [& d]     (gt/->CSSFunction "scale3d" d))
-(defn rotate3d [& d]    (gt/->CSSFunction "rotate3d" d))
-(defn perspective [& d] (gt/->CSSFunction "perspective" d))
-(defn linear-gradient [& d] (gt/->CSSFunction "linear-gradient" d))
-
-
-(def css-str (comp first gcomp/render-css gcomp/expand))
-
-(defn strs
-  "Returns a string representation of the given list of lists
-  in a form suitable for grid-layout's grid-areas key, which needs
-  quoted lists
-  (I'm sure Garden's got a built-in way of doing this but I couldn't find it)"
-  [lists]
-  (apply str
-    (map (fn [x] (str "\"" (string/join " " x) "\"")) lists)))
-
-(defn named? [x]
-  (or (keyword? x) (symbol? x)))
-
-(defn as-str [x]
-  (if (named? x)
-    (name x)
-    x))
-
-(defn sassify-rule
-  "Recurses through the given vector's second element
-   which represents a CSS rule, transforming any child rules
-   at the :& key into a form that  Garden will compile like SASS"
-  [[parent-selector {children :& :as rule}]]
-  (if children
-    [parent-selector (dissoc rule :&)
-      (map (fn [[child-selector child-rule]]
-             (sassify-rule [(str (if (keyword? child-selector)
-                      (if (namespace child-selector) "&::" "&:")
-                      "&") (as-str child-selector))
-               child-rule]))
-        children)]
-     [parent-selector rule]))
-
-
-
-; --- rules ---
-
 
 (defn add-canvas-rules [state]
   (-> state
@@ -123,6 +60,8 @@
                               :font-weight :normal
                               :font-size   (em 1)
                               }
+     :.imported-rules-list    {:display :flex :flex-flow "column wrap"
+                               :padding (em 2) :background :black}
      :.imported-rules         {
                                 :background  :black
                                 :color       (rgb 240 240 240)
@@ -224,90 +163,3 @@
                     [:50% {:background (linear-gradient "to top" (rgb 255 255 255) (rgb 150 150 150))}]
                     [:100% {:background (linear-gradient "to top" (rgb 100 100 100) (rgb 255 255 255))}]]})
     ]))
-
-(defn summarize [v]
-  (cond
-    (:unit v) (str (name (:unit v)) "-" (:magnitude v))
-    (:hue v) (str "hsl-" (string/join "-" ((juxt :hue :saturation :lightness) v)))
-    (:red v) (str "rgb-" (string/join "-" ((juxt :red :green :blue) v)))
-    (map? v)
-      (string/join "-"
-        (map str
-         (interleave
-           (map (fn [k] (if (keyword? k) (name k) k)) (keys v))
-           (map (fn [v] (if (vector? v) (string/join "-" (map str v)) (if (keyword? v) (name v) v))) (vals v)))))
-    (vector? v) (string/join "-" (map summarize v))
-    :otherwise "*"))
-
-(defn make-class-names [rule-maps]
-  (sort
-    (map (fn [[k v]]
-          (keyword
-            (str (if (keyword? k) (name k) (str k)) "_" (summarize v))))
-      (distinct (mapcat last (mapcat identity (vals rule-maps)))))))
-
-(defn parse-colour
-  ([s]
-   (parse-colour s (string/split s #"\,|\(|\)")))
-  ([s [t & a]]
-   (if a
-     (let [a (map read-string a)]
-      (case t
-        "rgb" (apply rgb a)
-        "rgba" (apply rgba a)
-        "hsl" (apply hsl a)
-        "hsla" (apply hsla a)
-        (keyword "css-variable" s)))
-     (keyword "css-variable" s))))
-
-(defn parse-unit
-  ([s]
-   (parse-unit s (rest (first (re-seq #"(\d+)(\D+)" s)))))
-  ([s [x t]]
-   (let [v (read-string x)]
-    (case t
-      "%"  (percent v)
-      "px" (px v)
-      "em" (em v)
-      "fr" (fr v)
-      "rem" (u/rem v)
-      "s"   (u/s v)
-      "ms"  (ms v)
-      s))))
-
-(defn unit [v]
-  (#{"px" "%" "em" "fr" "rem" "ms" "s"} (last (last (re-seq #"(\d+)(\D+)" v)))))
-
-(defn colour-fn-name [v]
-  (#{"rgb" "rgba" "hsl" "hsla"} (first (string/split v #"\,|\(|\)"))))
-
-(defn css-list? [v]
-  (> (count (string/split v #"[^\,]\s+")) 1))
-
-(defn css-number? [v]
-  (re-matches #"\d+" v))
-
-(defn parse-what [k v]
-  (cond
-    (css-list? v) :list
-    (or (string/ends-with? k "color") (colour-fn-name v)) :colour
-    (unit v) :unit
-    (css-number? v) :number
-    :otherwise :default))
-
-(defmulti parse-value parse-what)
-
-(defmethod parse-value :default [k v]
-  v)
-
-(defmethod parse-value :number [k v]
-  (read-string v))
-
-(defmethod parse-value :colour [k v]
-  (parse-colour v))
-
-(defmethod parse-value :unit [k v]
-  (parse-unit v))
-
-(defmethod parse-value :list [k v]
-  (mapv (partial parse-value :list) (string/split (string/replace v #",\s+" ",") #"\s+")))

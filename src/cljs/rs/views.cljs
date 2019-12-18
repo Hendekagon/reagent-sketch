@@ -10,11 +10,9 @@
     [garden.units :as u :refer [px pt em ms percent defunit]]
     [garden.types :as gt]
     [garden.selectors :as gs]
-    [rs.css :as rcss :refer [parse-value fr rad deg rotate3d perspective translate strs sassify-rule named?]]
+    [rs.css.core :as rcss :refer [parse-value fr rad deg rotate3d perspective translate strs sassify-rule named?]]
     [rs.actions :as actions]
-    [clojure.string :as string]
-    [rs.css :as css]))
-
+    [clojure.string :as string]))
 
 (defn css-view
  "
@@ -150,7 +148,7 @@
        [[:div (str (if (keyword? k) (name k) k))]
         (cond
           (:magnitude v) [unit-view v]
-          (or (:red v) (:hue v))       [:div.colour {:style {:background (css/css-str v)}}]
+          (or (:red v) (:hue v))       [:div.colour {:style {:background (rcss/css-str v)}}]
           (or (list? v) (vector? v)) [:div [listy-view v]]
           :otherwise [:div (str v)])
         ])
@@ -224,6 +222,13 @@
                  :on-load (fn [e] (actions/handle-message! {:action :css-loaded :id n :index i}))}])
        urls))))
 
+(defn rules-view [[k rules]]
+  (into [:div.imported-rules [:div (str k)]]
+    (map
+     (fn [[k v]] [:div.imported-rule [:div.imported-rule.selector (str k)]
+                  [:div.imported-rule.rule [table-view v]]])
+      (take 17 rules))))
+
 (defn boot-view
   "
 
@@ -236,26 +241,32 @@
      {main-rules      :main-rules
       canvas-rules    :canvas-rules
       units-rules     :units
-      animation-rules :animation-rules imported :imported} :css
-                              {t :text} :input-text
-                              :as state}]
+      animation-rules :animation-rules
+      imported        :imported} :css
+      {t :text} :input-text
+      :as state}]
    [:div.root
+    [extraction-view urls]
     [css-view :main-rules {:vendors ["webkit" "moz"] :auto-prefix #{:column-width :user-select}} main-rules]
     [css-view :animation-rules {} animation-rules]
     [css-view :units-rules {} units-rules]
-    [extraction-view urls]
     [:div.main
+     (into [:div.imported-preview]
+      (map
+       (fn [[id rules]]
+        [:div {:id (str "imported-css-" id)}
+          [css-view id {} rules]
+          [:div {:class "materialize-min-css.enabled light-green.lighten-3"} "test"]])
+       imported))
      [:div.colour-previews
       [:div "Unique Colours"]
       (into [:div.colours]
-        (map (fn [c] [:div.colour-swatch {:style {:background (css/css-str c)}}])
-          (into #{} (mapcat (fn [[k v]] [(get v "color")]) (mapcat val imported)))))]
+        (map (fn [[c k]] [:div.colour-swatch {:style {:background (rcss/css-str c)} :title (str (color/as-hex c) " " k)}])
+          (reduce (fn [r [k c]] (update r c (fn [t] (conj (or t []) k))))
+          {} (filter (comp :red last) (mapcat val (mapcat val imported))))))]
      #_(into [:div [:div "Unique properties"]]
        (map (fn [[k v]] [:div [:div (str k)] [:div (str v)]])
          (into #{} (mapcat last (mapcat val imported)))))
-     (into [:div.imported-rules]
-      (map
-       (fn [[k v]] [:div.imported-rule [:div.imported-rule.selector (str k)]
-                  [:div.imported-rule.rule [table-view v]]])
-        (mapcat val imported)))
+     (into [:div.imported-rules-list]
+      (map (fn [r] [rules-view r]) imported))
      ]]))
