@@ -78,16 +78,14 @@
 
 (defn change-thing
   ([state {value :value {tv :value} :target path :path}]
-   ;(println "change>" path value)
+   ;(println "change >" path value)
     (assoc-in state path (or value tv))))
 
 (defn update-css
   ([state {value :value path :path}]
-   ;(println "css> " path value)
     (update-in state path
       (fn [rules]
-         (println "css>  " path rules)
-        (merge value rules)))))
+        (merge rules value)))))
 
 (defn toggle-rule
   ([state {value :value path :path d :display}]

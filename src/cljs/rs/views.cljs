@@ -91,15 +91,6 @@
              (actions/handle-message! {:path path :value (u (js/parseFloat (oget e [:target :value])))}))
     }])
 
-
-(defn text-demo
-  "takes the text from the text-input function and displays it in a component"
-  [{path  :path
-    id    :id
-    value :value
-    }]
-  [:div {:id id} value])
-
 (defn unit-view [{{:keys [unit magnitude]} :value path :path}]
   [:div {:title (name unit) :class (str "unit " (if (= "%" (name unit)) "percent" (name unit)))}
     (str magnitude (name unit))])
@@ -213,8 +204,8 @@
 (defn rule-view [{:keys [value display-path selector display] :as rule}]
   [:div.imported-rule
     [:div.imported-rule.selector
-     {:on-click (on {:click :rule :params {:path display-path :value value :with display}})}
-      (str selector)]
+     {:on-click (on {:click :rule :params {:path display-path :value value :with display}})
+     :title (str selector)}]
      [:div {:class (str "imported-rule.rule." display)}
       (when (not (nil? display))
         [table-view rule])]])
@@ -229,7 +220,7 @@
      slider-button-parameters :slider-button-parameters
      {main-rules      :main-rules
       canvas-rules    :canvas-rules
-      units-rules     :units
+      units-rules     :units-rules
       display         :display
       animation-rules :animation-rules
       imported :imported} :css
@@ -251,13 +242,15 @@
        (map
          (fn [[ik im]]
            (if (= :folded (get-in display [ik :self]))
-             [:div.imported-ruleset [:div.ruleset-title (str ik)]]
-             (into [:div.imported-ruleset [:div.ruleset-title (str ik)]]
-              (map
-                (fn [[k v]]
-                  [rule-view {:value v :selector k :path [:css :imported ik k]
-                              :display-path [:css :display ik k] :display (get-in display [ik k])}])
-                im))))
+             [:div.imported-ruleset-box
+               [:div.ruleset-title (name ik)]]
+             [:div.imported-ruleset-box [:div.ruleset-title (name ik)]
+              (into [:div.imported-ruleset]
+                (map
+                 (fn [[k v]]
+                   [rule-view {:value v :selector k :path [:css :imported ik k]
+                               :display-path [:css :display ik k] :display (get-in display [ik k])}])
+                  (sort-by (comp count val) im)))]))
          imported))
      ]]))
 

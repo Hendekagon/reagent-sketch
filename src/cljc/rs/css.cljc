@@ -16,31 +16,41 @@
 (defunit fr)
 (defunit rad)
 (defunit deg)
-(defunit vw)
 (defunit vh)
+(defunit vw)
+(def pc percent)
 
-; and some CSS functions for animations
-
-(defn rotate [& d]      (gt/->CSSFunction "rotate" d))
-(defn translate [& d]   (gt/->CSSFunction "translate" d))
-(defn scale [& d]       (gt/->CSSFunction "scale" d))
+(defn minmax [& d] (gt/->CSSFunction "minmax" d))
+(defn calc [& d] (gt/->CSSFunction "calc" d))
+(defn url [& d] (gt/->CSSFunction "url" d))
+(defn rotate [& d] (gt/->CSSFunction "rotate" d))
+(defn translate [& d] (gt/->CSSFunction "translate" d))
+(defn scale [& d] (gt/->CSSFunction "scale" d))
 (defn translate3d [& d] (gt/->CSSFunction "translate3d" d))
-(defn scale3d [& d]     (gt/->CSSFunction "scale3d" d))
-(defn rotate3d [& d]    (gt/->CSSFunction "rotate3d" d))
+(defn scale3d [& d] (gt/->CSSFunction "scale3d" d))
+(defn rotate3d [& d] (gt/->CSSFunction "rotate3d" d))
 (defn perspective [& d] (gt/->CSSFunction "perspective" d))
 (defn linear-gradient [& d] (gt/->CSSFunction "linear-gradient" d))
+(defn repeet [& d] (gt/->CSSFunction "repeat" d))
 
+(def css-transition-group
+  #?(:cljs :not-implemented-in-cljs-either
+     ;(r/adapt-react-class js/React.addons.CSSTransitionGroup)
+     :clj  :not-implemented-in-clj))
+
+(defn with-transition [parent properties children]
+  [css-transition-group (assoc properties :component (name (first parent)))
+   (map-indexed (fn [i child] (with-meta child (or (meta child) {:key i}))) children)])
 
 (def css-str (comp first gcomp/render-css gcomp/expand))
 
-(defn strs
-  "Returns a string representation of the given list of lists
-  in a form suitable for grid-layout's grid-areas key, which needs
-  quoted lists
-  (I'm sure Garden's got a built-in way of doing this but I couldn't find it)"
-  [lists]
-  (apply str
-    (map (fn [x] (str "\"" (string/join " " x) "\"")) lists)))
+(defn strs [l]
+  (string/join "" (map (fn [x] (str "\"" (apply str (interpose " " x)) "\"")) l)))
+
+(defn strz [l]
+  (apply str (map (fn [x] (str "\"" (apply str (interpose " " (map css x))) "\"")) l)))
+
+(def areas strs)
 
 (defn named? [x]
   (or (keyword? x) (symbol? x)))

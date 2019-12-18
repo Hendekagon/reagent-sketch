@@ -1,7 +1,7 @@
 ; extra figwheel options
 {
- :watch-dirs ["src/cljc" "src/cljs"]
- :open-url   "http://localhost:9507/"
- :ring-server-options {:port 9507}
- :log-level  :all
- }
+  :watch-dirs ["src/cljc" "src/cljs"]
+  :open-url false
+  :log-level :all
+  :reload-dependents true
+}

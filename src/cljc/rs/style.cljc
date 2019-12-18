@@ -1,20 +1,28 @@
-(ns rs.style
+(ns ^:figwheel-no-load rs.style
   (:require
     [garden.color :as color :refer [hsl hsla rgb rgba hex->rgb as-hex]]
     [garden.units :as u :refer [defunit px percent pt em ms]]
     [garden.types :as gt]
-    [rs.css :refer [fr linear-gradient]]))
+    [garden.arithmetic :as a]
+    [rs.css :refer [fr vw vh linear-gradient calc]]))
 
 (defn main-rules [params]
   {
+   :.root
+   {
+    :background (rgb 30 30 30)
+    :width (percent 100)
+    :height (em 20)
+    :display :flex
+    }
    :.main
    {
     :background (rgb 30 30 30)
     :color (hsl 0 0 100)
     :width (percent 100)
-    :height (percent 100)
+    :height (em 100)
     :display :flex
-    :flex-flow "column nowrap"
+    :flex-flow '[[column nowrap]]
     :font-family ["Gill Sans" "Helvetica" "Sans Serif"]
     :font-weight :normal
     :font-size (em 1)
@@ -23,19 +31,38 @@
                      :background :black
                      :color (rgb 240 240 240)
                      :width (percent 100)
-                     :height (percent 100)
                      :display :flex
-                     :flex-flow "row wrap"
-                     :font-size (em 0.7)
+                     :flex-flow '[[row wrap]]
+                     :font-size (em 1)
                      }
+   :.imported-ruleset-box {
+                           :background :black
+                           :border-color :red
+                           :border-width (px 1)
+                           :border-style :solid
+                           :color (rgb 240 240 240)
+                           :width (percent 100)
+                           :display :grid
+                           :grid-template-rows [[(em 4) (fr 1)]]
+                           :grid-row-gap (em 0.1)
+                           :grid-column-gap (em 2)
+                           :justify-items :center
+                           }
+   :.ruleset-title {:grid-row 1 :display :flex :justify-content :center
+                    :align-items :center :font-size (em 2)}
    :.imported-ruleset {
                        :background :black
+                       :border-color :orange
+                       :border-width (px 1)
+                       :border-style :solid
+                       :width (calc "100% - 4em")
                        :color (rgb 240 240 240)
-                       :width (percent 100)
                        :display :flex
-                       :flex-flow "row wrap"
+                       :flex-flow '[[row wrap]]
+                       :grid-row 2
                        }
-   :.imported-rule {:display :flex :flex-flow "row wrap" :margin (px 1)}
+   :.imported-rule {:display :flex :flex-flow '[[row wrap]] :margin (px 4)
+                    :width (px 32) :height (px 32)}
    :.selector {:background (rgb 40 40 40) :display :flex :flex-flow "row wrap" :width (em 16) :margin 0 :padding (em 0.5)}
    :.rule {:display :flex :width (em 32) :background (rgb 50 50 50) :margin 0}
    :.colours {:display :flex :flex-flow "row wrap" :background (rgb 100 100 100) :margin (em 1)}
@@ -74,13 +101,14 @@
     :padding (percent 4)
     }
    :body {
-
           :background (rgb 30 30 30)
           :font-family ["Gill Sans" "Helvetica" "Verdana" "Sans Serif"]
           :font-size (em 1)
           :font-weight :normal
           :cursor :default
-          :zoom 0.8
+          :padding 0
+          :margin 0
+          :width (percent 100)
           }
    :.button {
              :cursor :pointer

@@ -12,7 +12,7 @@
   (println "---before restart--- "))
 
 (defn ^:after-load start! []
-  (when (or true (nil? @actions/app-state))
+  (when (or (and @actions/app-state (:reload? @actions/app-state)) (nil? @actions/app-state))
     (do
       (reset! actions/app-state (actions/initialize-state))))
   (r/render [views/boot-view] (.getElementById js/document "app")))
