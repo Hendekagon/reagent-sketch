@@ -1,6 +1,6 @@
 (ns ^:figwheel-hooks rs.ui
   "
-    This namespace starts the UI
+    This namespace (re)starts the UI
   "
   (:require
     [reagent.core :as r]
@@ -9,10 +9,10 @@
 
 (defn ^:before-load before-start!
   [& q]
-  (println "---before restart--- "))
+  (println "---before restart---"))
 
 (defn ^:after-load start! []
-  (when (or (and @actions/app-state (:reload? @actions/app-state)) (nil? @actions/app-state))
-    (do
-      (reset! actions/app-state (actions/initialize-state))))
-  (r/render [views/boot-view] (.getElementById js/document "app")))
+  (if (or (and @actions/app-state (:reload? @actions/app-state)) (nil? @actions/app-state))
+    (reset! actions/app-state (actions/initialize-state))
+    (swap! actions/app-state actions/reset-css))
+  (r/render [views/root-view] (.getElementById js/document "app")))
