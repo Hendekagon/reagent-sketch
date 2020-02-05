@@ -5,7 +5,6 @@
   (:require
     [reagent.core :as r]
     [rs.actions :as actions]
-    [rs.css :as css]
     [rs.views :as views]))
 
 (defn ^:before-load before-start!
@@ -13,9 +12,7 @@
   (println "---before restart--- "))
 
 (defn ^:after-load start! []
-  (if (nil? @actions/app-state)
+  (when (or (and @actions/app-state (:reload? @actions/app-state)) (nil? @actions/app-state))
     (do
-      (reset! actions/app-state (actions/make-state)))
-    (do
-      (swap! actions/app-state (fn [s] (-> s css/add-main-rules)))))
+      (reset! actions/app-state (actions/initialize-state))))
   (r/render [views/boot-view] (.getElementById js/document "app")))

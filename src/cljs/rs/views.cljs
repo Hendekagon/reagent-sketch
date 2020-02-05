@@ -5,14 +5,17 @@
   "
   (:require
     [oops.core :refer [oget]]
+    [cognitect.transit :as t]
     [garden.core :as gc :refer [css]]
     [garden.color :as color :refer [hsl rgb hsla rgba hex->rgb as-hex]]
     [garden.units :as u :refer [px pt em ms percent defunit]]
     [garden.types :as gt]
     [garden.selectors :as gs]
-    [rs.css.core :as rcss :refer [parse-value fr rad deg rotate3d perspective translate strs sassify-rule named?]]
+    [rs.css :as rcss :refer [parse-value fr rad deg rotate3d perspective translate strs sassify-rule named?]]
     [rs.actions :as actions]
-    [clojure.string :as string]))
+    [clojure.string :as string]
+    [rs.css :as css]))
+
 
 (defn css-view
  "
@@ -31,8 +34,14 @@
         (fn [[f & _ :as l]]
           (if (or (string? f) (named? f))
             (map sassify-rule (partition 2 l)) l))
-(if (map? rules) rules (partition-by :identifier rules))))]))
+    (if (map? rules) rules (partition-by :identifier rules))))]))
 
+(defn on [{{c :convert :or {c identity} prevent-default? :prevent-default?} :params :as message}]
+  (fn [e]
+    (let [v (try (oget e [:target :value])
+              (catch js/Error error nil))]
+      (actions/handle-message!
+       (assoc-in message [:params :target :value] (c v))))))
 
 (defn input-text-view
   "
@@ -82,31 +91,27 @@
              (actions/handle-message! {:path path :value (u (js/parseFloat (oget e [:target :value])))}))
     }])
 
+(defn unit-view [{{:keys [unit magnitude]} :value path :path}]
+  [:div {:title (name unit) :class (str "unit " (if (= "%" (name unit)) "percent" (name unit)))}
+    (str magnitude (name unit))])
 
-(defn text-demo
-  "takes the text from the text-input function and displays it in a component"
-  [{path  :path
-    id    :id
-    value :value
-    }]
-  [:div {:id id} value]
-  )
-
-(defn unit-view [{:keys [unit magnitude]}]
-  [:div {:title (name unit) :class (str "unit " (if (= "%" (name unit)) "percent" (name unit)))} (str magnitude)])
+(defn colour-view [{colour :value path :path}]
+  [:input {:type :color :value (css/css-str colour)
+           :on-input (on {:change :colour-swatch :params {:path path :convert hex->rgb}})
+           :on-change (on {:change :colour-swatch :params {:path path :convert hex->rgb}})
+           }])
 
 (defn listy-view
   "Returns a view to display a list of things"
-  [a-list]
+  [{a-list :value path :path}]
   (into [:div.list]
-
-        (map
-          (fn [v]
-            [:div
+        (map-indexed
+          (fn [i v]
+            [:div.list-item
              (cond
-               (:magnitude v) [unit-view v]
-               (:hue v) (str "(hsl " (string/join " " [(:hue v) (:saturation v) (:lightness v)]) ")")
-               (or (list? v) (vector? v)) [listy-view v]
+               (:magnitude v) [unit-view {:value v :path (conj path i)}]
+               (or (:red v) (:hue v)) [colour-view {:colour v :path (conj path i)}]
+               (or (list? v) (vector? v)) [listy-view {:value v :path (conj path i)}]
                :otherwise (str v))])
           a-list)))
 
@@ -126,30 +131,18 @@
              ])
           parameter-maps)))
 
-;(defn colours [canvas-colours button-colours]
-;  ([canvas-colours :hue :lightness]
-;    [{
-;      :hue       hue
-;      :lightness lightness
-;
-;      }
-;     (+ hue 180 )
-;     (+ lightness 30)])
-;
-;  )
-
 (defn table-view
   "Returns a view to display a table
    of the given map's key-value pairs"
-  [a-map]
+  [{a-map :value path :path}]
   (into [:div.table {:title (str a-map)}]
     (mapcat
       (fn [[k v]]
        [[:div (str (if (keyword? k) (name k) k))]
         (cond
-          (:magnitude v) [unit-view v]
-          (or (:red v) (:hue v))       [:div.colour {:style {:background (rcss/css-str v)}}]
-          (or (list? v) (vector? v)) [:div [listy-view v]]
+          (:magnitude v) [unit-view {:value v :path (conj path k)}]
+          (or (:red v) (:hue v)) [colour-view {:value v :path (conj path k)}]
+          (or (seqable? v) (list? v) (vector? v)) [listy-view {:value v :path (conj path k)}]
           :otherwise [:div (str v)])
         ])
       (sort-by key a-map))))
@@ -197,10 +190,10 @@
      slider-button-parameters :slider-button-parameters
      {main-rules      :main-rules
       canvas-rules    :canvas-rules
-      ;animation-rules :animation-rules
+      animation-rules :animation-rules
       imported :imported} :css
-                              {t :text} :input-text
-                              :as state}]
+      {t :text} :input-text
+      :as state}]
    [:div.root
     [css-view :main-rules {:vendors ["webkit" "moz"] :auto-prefix #{:column-width :user-select}} main-rules]
     [css-view :animation-rules {} (animation-rules)]
@@ -208,26 +201,14 @@
       [:div#card1 "hi!"]
      ]]))
 
-(defn extraction-view
-  "
-    A view that converts the given
-    local CSS files into .edn files
-  "
-  ([urls]
-   (into [:div.css-urls]
-     (map-indexed
-       (fn [i n]
-         [:link {:type    "text/css" :rel "stylesheet" :href (str "css/" n) :title (name n)
-                 :id      (name n)
-                 :on-load (fn [e] (actions/handle-message! {:action :css-loaded :id n :index i}))}])
-       urls))))
-
-(defn rules-view [[k rules]]
-  (into [:div.imported-rules [:div (str k)]]
-    (map
-     (fn [[k v]] [:div.imported-rule [:div.imported-rule.selector (str k)]
-                  [:div.imported-rule.rule [table-view v]]])
-      (take 17 rules))))
+(defn rule-view [{:keys [value display-path selector display] :as rule}]
+  [:div.imported-rule
+    [:div.imported-rule.selector
+     {:on-click (on {:click :rule :params {:path display-path :value value :with display}})
+     :title (str selector)}]
+     [:div {:class (str "imported-rule.rule." display)}
+      (when (not (nil? display))
+        [table-view rule])]])
 
 (defn boot-view
   "
@@ -237,36 +218,95 @@
   ([{
      slider-parameters        :slider-parameters
      slider-button-parameters :slider-button-parameters
-     urls :css-urls
      {main-rules      :main-rules
       canvas-rules    :canvas-rules
-      units-rules     :units
+      units-rules     :units-rules
+      display         :display
       animation-rules :animation-rules
-      imported        :imported} :css
-      {t :text} :input-text
-      :as state}]
+      imported :imported} :css
+                              {t :text} :input-text
+                              :as state}]
    [:div.root
-    [extraction-view urls]
     [css-view :main-rules {:vendors ["webkit" "moz"] :auto-prefix #{:column-width :user-select}} main-rules]
     [css-view :animation-rules {} animation-rules]
     [css-view :units-rules {} units-rules]
     [:div.main
-     (into [:div.imported-preview]
-      (map
-       (fn [[id rules]]
-        [:div {:id (str "imported-css-" id)}
-          [css-view id {} rules]
-          [:div {:class "materialize-min-css.enabled light-green.lighten-3"} "test"]])
-       imported))
      [:div.colour-previews
       [:div "Unique Colours"]
       (into [:div.colours]
-        (map (fn [[c k]] [:div.colour-swatch {:style {:background (rcss/css-str c)} :title (str (color/as-hex c) " " k)}])
-          (reduce (fn [r [k c]] (update r c (fn [t] (conj (or t []) k))))
-          {} (filter (comp :red last) (mapcat val (mapcat val imported))))))]
-     #_(into [:div [:div "Unique properties"]]
-       (map (fn [[k v]] [:div [:div (str k)] [:div (str v)]])
-         (into #{} (mapcat last (mapcat val imported)))))
-     (into [:div.imported-rules-list]
-      (map (fn [r] [rules-view r]) imported))
+        (map (fn [c] [:div.colour-swatch {:style {:background (css/css-str c)}}])
+          (into #{} (mapcat (fn [[k v]] [(get v "color")]) (mapcat val imported)))))]
+     #_[:div.unique-properties [:div "Unique properties"]
+     [table-view {:value (into {} (map (juxt key (comp (partial map last) val)) (group-by first (distinct (mapcat last (mapcat val imported))))))}]]
+     (into [:div.imported-rules]
+       (map
+         (fn [[ik im]]
+           (if (= :folded (get-in display [ik :self]))
+             [:div.imported-ruleset-box
+               [:div.ruleset-title (name ik)]]
+             [:div.imported-ruleset-box [:div.ruleset-title (name ik)]
+              (into [:div.imported-ruleset]
+                (map
+                 (fn [[k v]]
+                   [rule-view {:value v :selector k :path [:css :imported ik k]
+                               :display-path [:css :display ik k] :display (get-in display [ik k])}])
+                  (sort-by (comp count val) im)))]))
+         imported))
      ]]))
+
+
+(defn to-clj [s]
+  (reduce
+    (fn [r i]
+      (assoc r (.item s i) (parse-value (.item s i) (.getPropertyValue s (.item s i)))))
+    {} (range (.-length s))))
+
+(defn to-transit [state]
+  (t/write (t/writer :json-verbose) state))
+
+(defn download!
+  ([tipe naym contents]
+    (println "download  as" tipe naym)
+    (let [
+          a (.createElement js/document "a")
+          f (js/Blob. (clj->js [contents]) {:type (name tipe)})
+          ]
+      (set! (.-href a) (.createObjectURL js/URL f))
+      (set! (.-download a) (str naym "." (name tipe)))
+      (println "<a>" a)
+      (.dispatchEvent a (js/MouseEvent. "click")))))
+
+(defn extract [i naym]
+  (fn [e]
+    (println "loaded" i naym)
+    (let [s (.-cssRules (aget (.. js/document -styleSheets) i))
+         sr (reduce
+              (fn [r [selector style]]
+                (assoc r selector (to-clj style)))
+              {} (remove (fn [[k v]] (or (nil? k) (nil? v))) (map (fn [i] [(.-selectorText (.item s i)) (.-style (.item s i))]) (range (.-length s)))))]
+     ;(doseq [[k v] sr] (println k "   " v))
+     (download! "edn" naym (str sr)))))
+
+(defn extraction-view
+  "
+    A view that converts the given
+    local CSS files into .edn files
+  "
+  ([]
+    (extraction-view
+      [
+        "base.css"
+        "addons.css"
+        "docs.css"
+        "responsive.css"
+        "styles.css"
+        "prettify.css"
+      ]))
+  ([urls]
+   [:div
+    (into [:div]
+      (map-indexed
+        (fn [i n]
+          [:link {:type "text/css" :rel "stylesheet" :href (str "css/" n) :on-load (extract i n)}])
+        urls))
+     [:div "hi there"]]))

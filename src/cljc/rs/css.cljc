@@ -8,158 +8,153 @@
     [garden.compiler :as gcomp]
     [garden.types :as gt]
     [garden.stylesheet :refer [at-media]]
-    [rs.css.core :refer [fr rad deg rotate translate scale linear-gradient]]
+    #?(:cljs [cljs.tools.reader :refer [read-string]])
     [clojure.string :as string]))
 
-(defn add-canvas-rules [state]
-  (-> state
-      (assoc-in [:css :canvas-rules]
-        {
-         "#canvas"
-                           {
-                            :border        [[(px 0) :solid (rgb 86 86 86)]]
-                            :background    (hsla 210 70 85 1)
-                            :border-radius (em 0)
-                            :width         (percent 90)
-                            :height        (px 500)
-                            :display       "table"
-                            }
-         "#button-wrapper" {
-                            :display        "table-cell"
-                            :vertical-align "middle"
-                            }
-         "#demo-button"    {
-                            :background    (hsl 109 100 70)
-                            :max-width     (px 100)
-                            :height        (px 50)
-                            :overflow      "hidden"
-                            :padding       (em 0.5)
-                            :display       :flex
-                            :margin        "auto"
-                            :border-radius (px 4)
-                            :font-size     (pt 16)
-                            :border-width  (px 1)
-                            :justify-content :center
-                            :align-items :center
-                            }
-         })))
+; define some CSS units missing from garden.units:
 
+(defunit fr)
+(defunit rad)
+(defunit deg)
+(defunit vh)
+(defunit vw)
+(def pc percent)
 
-(defn add-main-rules [state]
-  (assoc-in state [:css :main-rules]
-    {
-     :.main
-                             {
-                              :background  (rgb 30 30 30)
-                              :color       (hsl 0 0 100)
-                              :width       (percent 100)
-                              :height      (percent 100)
-                              :display     :flex
-                              :flex-flow   "column nowrap"
-                              :font-family ["Gill Sans" "Helvetica" "Sans Serif"]
-                              :font-weight :normal
-                              :font-size   (em 1)
-                              }
-     :.imported-rules-list    {:display :flex :flex-flow "column wrap"
-                               :padding (em 2) :background :black}
-     :.imported-rules         {
-                                :background  :black
-                                :color       (rgb 240 240 240)
-                                :width       (percent 100)
-                                :height      (percent 100)
-                                :display     :flex
-                                :flex-flow   "row wrap"
-                                :font-size   (em 0.7)
-                              }
-     :.imported-rule         {:display :flex :flex-flow "row wrap" :margin (px 1)}
-     :.selector              {:background (rgb 40 40 40) :display :flex :flex-flow "row wrap" :width (em 16) :margin 0 :padding (em 0.5)}
-     :.rule                  {:display :flex :width (em 32) :background (rgb 50 50 50) :margin 0}
-     :.colours               {:display :flex :flex-flow "row wrap" :background (rgb 100 100 100) :margin (em 1)}
-     :.colour-previews       {:display :flex :flex-flow "row wrap" :padding (em 1)}
-     :.colour                {:display :flex :min-width (px 8) :min-height (px 8) :max-width (px 32) :max-height (px 32)}
-     :.colour-swatch         {:display :flex :min-width (px 24) :min-height (px 24) :max-width (px 64) :max-height (px 64)
-                              :margin (px 8)}
-     :.css-urls {:display :none}
-     :.table
-       {
-        :padding               (em 1)
-        :display               :grid
-        :color                 :white
-        :grid-template-columns [[(percent 70) (fr 1)]]
-        :grid-auto-rows        (em 1.5)
-        :grid-row-gap          (em 0.7)
-        :grid-column-gap       (em 2)
-        }
-     ".things"
-                             {
-                              :display               :grid
-                              :grid-area             :content
-                              :grid-template-columns [[(percent 20) (fr 1)]]
-                              :grid-column-gap       (em 1)
-                              :grid-auto-rows        :auto
-                              :grid-row-gap          (em 2.5)
-                              :background            (rgb 200 205 210)
-                              :padding               (percent 4)
-                              }
-     :body                   {
+(defn minmax [& d] (gt/->CSSFunction "minmax" d))
+(defn calc [& d] (gt/->CSSFunction "calc" d))
+(defn url [& d] (gt/->CSSFunction "url" d))
+(defn rotate [& d] (gt/->CSSFunction "rotate" d))
+(defn translate [& d] (gt/->CSSFunction "translate" d))
+(defn scale [& d] (gt/->CSSFunction "scale" d))
+(defn translate3d [& d] (gt/->CSSFunction "translate3d" d))
+(defn scale3d [& d] (gt/->CSSFunction "scale3d" d))
+(defn rotate3d [& d] (gt/->CSSFunction "rotate3d" d))
+(defn perspective [& d] (gt/->CSSFunction "perspective" d))
+(defn linear-gradient [& d] (gt/->CSSFunction "linear-gradient" d))
+(defn repeet [& d] (gt/->CSSFunction "repeat" d))
 
-                              :background                (rgb 30 30 30)
-                              :font-family               ["Gill Sans" "Helvetica" "Verdana" "Sans Serif"]
-                              :font-size                 (em 1)
-                              :font-weight               :normal
-                              :cursor                    :default
-                              :zoom                      0.8
-                              }
-     :.button                {
-                              :cursor      :pointer
-                              :width       (px 10)
-                              :height      (px 28)
-                              :margin-left (percent 1)
-                              }
-     ".padding_em-1"         {:padding (em 1)}
-     ".button-refresh:hover" {}
-     "#text-demo"            {
-                              :color (hsl 20 30 90)
+(def css-transition-group
+  #?(:cljs :not-implemented-in-cljs-either
+     ;(r/adapt-react-class js/React.addons.CSSTransitionGroup)
+     :clj  :not-implemented-in-clj))
 
-                              }
-     :div.canvas-parameters  {
-                              :max-height (px 200)
-                              :padding    (px 10)
-                              }
-     :div.button-parameters  {
-                              :height  (percent 50)
-                              :padding (px 10)
-                              }
+(defn with-transition [parent properties children]
+  [css-transition-group (assoc properties :component (name (first parent)))
+   (map-indexed (fn [i child] (with-meta child (or (meta child) {:key i}))) children)])
 
-     }))
+(def css-str (comp first gcomp/render-css gcomp/expand))
 
+(defn strs [l]
+  (string/join "" (map (fn [x] (str "\"" (apply str (interpose " " x)) "\"")) l)))
 
-(defn add-units-rules [state]
-  (assoc-in state [:css :units]
-    {:.unit    {
-                :justify-self    :start
-                :display         :flex
-                :justify-content :center
-                :align-items     :center
-                :min-width       (em 2)
-                :border-radius   (px 4)
-                :border          :none
-                :background      (rgb 150 150 150)
-                :padding         (em 0.1)
-                }
-     :.em      {:background (hsl 150 50 50) :color (hsl 150 20 10)}
-     :.px      {:background (hsl 30 30 70) :color (hsl 15 20 10)}
-     :.percent {:background (hsl 50 70 80) :color (hsl 15 20 10)}
-     :.fr      {:background (hsl 200 70 80) :color (hsl 15 20 10)}}))
+(defn strz [l]
+  (apply str (map (fn [x] (str "\"" (apply str (interpose " " (map css x))) "\"")) l)))
 
+(def areas strs)
 
-(defn add-animation-rules [state]
-  (assoc-in state [:css :animation]
-    [
-    (gt/->CSSAtRule :keyframes
-      {:identifier :gradient-flow
-       :frames     [
-                    [:0% {:background (linear-gradient "to top" (rgb 100 100 100) (rgb 255 255 255))}]
-                    [:50% {:background (linear-gradient "to top" (rgb 255 255 255) (rgb 150 150 150))}]
-                    [:100% {:background (linear-gradient "to top" (rgb 100 100 100) (rgb 255 255 255))}]]})
-    ]))
+(defn named? [x]
+  (or (keyword? x) (symbol? x)))
+
+(defn as-str [x]
+  (if (named? x)
+    (name x)
+    x))
+
+(defn sassify-rule
+  "Recurses through the given vector's second element
+   which represents a CSS rule, transforming any child rules
+   at the :& key into a form that  Garden will compile like SASS"
+  [[parent-selector {children :& :as rule}]]
+  (if children
+    [parent-selector (dissoc rule :&)
+      (map (fn [[child-selector child-rule]]
+             (sassify-rule [(str (if (keyword? child-selector)
+                      (if (namespace child-selector) "&::" "&:")
+                      "&") (as-str child-selector))
+               child-rule]))
+        children)]
+     [parent-selector rule]))
+
+(defn summarize [v]
+  (cond
+    (:unit v) (str (name (:unit v)) "-" (:magnitude v))
+    (:hue v) (str "hsl-" (string/join "-" ((juxt :hue :saturation :lightness) v)))
+    (:red v) (str "rgb-" (string/join "-" ((juxt :red :green :blue) v)))
+    (map? v)
+      (string/join "-"
+        (map str
+         (interleave
+           (map (fn [k] (if (keyword? k) (name k) k)) (keys v))
+           (map (fn [v] (if (vector? v) (string/join "-" (map str v)) (if (keyword? v) (name v) v))) (vals v)))))
+    (vector? v) (string/join "-" (map summarize v))
+    :otherwise "*"))
+
+(defn make-class-names [rule-maps]
+  (sort
+    (map (fn [[k v]]
+          (keyword
+            (str (if (keyword? k) (name k) (str k)) "_" (summarize v))))
+      (distinct (mapcat last (mapcat identity (vals rule-maps)))))))
+
+(defn parse-colour
+  ([s]
+   (parse-colour s (string/split s #"\,|\(|\)")))
+  ([s [t & a]]
+   (if a
+     (let [a (map read-string a)]
+      (case t
+        "rgb" (apply rgb a)
+        "rgba" (apply rgba a)
+        "hsl" (apply hsl a)
+        "hsla" (apply hsla a)
+        (keyword "css-variable" s)))
+     (keyword "css-variable" s))))
+
+(defn parse-unit
+  ([s]
+   (parse-unit s (rest (first (re-seq #"(\d+|\d+.\d+)(\D+)" s)))))
+  ([s [x t]]
+   (let [v (read-string x)]
+    (case t
+      "%"  (percent v)
+      "px" (px v)
+      "em" (em v)
+      "fr" (fr v)
+      s))))
+
+(defn unit [v]
+  (#{"px" "%" "em" "fr"} (last (last (re-seq #"(\d+|\d+.\d+)(\D+)" v)))))
+
+(defn colour-fn-name [v]
+  (#{"rgb" "rgba" "hsl" "hsla"} (first (string/split v #"\,|\(|\)"))))
+
+(defn css-list? [v]
+  (> (count (string/split v #"[^\,]\s+")) 1))
+
+(defn css-number? [v]
+  (re-matches #"\d+|\d+.\d+" v))
+
+(defn parse-what [k v]
+  (cond
+    (css-list? v) :list
+    (or (string/ends-with? k "color") (colour-fn-name v)) :colour
+    (unit v) :unit
+    (css-number? v) :number
+    :otherwise :default))
+
+(defmulti parse-value parse-what)
+
+(defmethod parse-value :default [k v]
+  v)
+
+(defmethod parse-value :number [k v]
+  (read-string v))
+
+(defmethod parse-value :colour [k v]
+  (parse-colour v))
+
+(defmethod parse-value :unit [k v]
+  (parse-unit v))
+
+(defmethod parse-value :list [k v]
+  (mapv (partial parse-value :list) (string/split (string/replace v #",\s+" ",") #"\s+")))
