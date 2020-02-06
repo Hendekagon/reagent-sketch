@@ -12,7 +12,6 @@
   (:require
     [garden.core :as gc]
     #?(:cljs [reagent.ratom :as ra])
-    #?(:cljs [oops.core :refer [oget ocall]])
     [rs.style :as css]
     [garden.color :as color :refer [hsl rgb rgba hex->rgb as-hex]]
     [garden.units :as u :refer [percent px pt em ms]]
@@ -28,7 +27,10 @@
 
 (defn change-thing
   ([state {value :value {tv :value} :target path :path :as msg}]
-   (println "change >" msg)
+    (assoc-in state path (or value tv))))
+
+(defn change-text
+  ([state {value :value {tv :value} :target path :path :as msg}]
     (assoc-in state path (or value tv))))
 
 (declare initialize-state)
@@ -36,7 +38,7 @@
 (defn make-event-map [state]
   {
     {:click :reinitialize} initialize-state
-    {:change :colour-swatch} change-thing
+    {:change :thing}       change-thing
   })
 
 (defn reset-css [state]
@@ -67,9 +69,8 @@
 
 (defn handle-message
   "Returns a new state from the given state and message"
-  [{event-map :event-map :as state} {params :params :as message}]
-   (println ">" message)
-  ((get event-map (dissoc message :params) change-thing) state params))
+  [{event-map :event-map :as state} {match :match message :message}]
+  ((get event-map match change-thing) state message))
 
 (defn handle-message!
   "Maybe updates the app state with

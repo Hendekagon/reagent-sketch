@@ -4,7 +4,7 @@
     [garden.units :as u :refer [defunit px percent pc pt em ms]]
     [garden.types :as gt]
     [garden.arithmetic :as ga]
-    [rs.css :refer [fr vw vh p% linear-gradient calc repeet areas]]))
+    [rs.css :refer [fr vw vh p% repeating-linear-gradient calc repeet areas]]))
 
 (defn main-rules [params]
   {
@@ -68,6 +68,13 @@
     {
       :margin-top (em 1)
     }
+   ".ani"
+   {
+    :animation-name            :gradient-flow
+    :animation-duration        (ms 20000)
+    :animation-iteration-count :infinite
+    :animation-timing-function :linear
+    }
    })
 
 (defn animation-rules [params]
@@ -75,10 +82,13 @@
    (gt/->CSSAtRule :keyframes
      {:identifier :gradient-flow
       :frames
-       [
-         [:0% {:background (linear-gradient "to top" (rgb 100 100 100) (rgb 255 255 255))}]
-         [:50% {:background (linear-gradient "to top" (rgb 255 255 255) (rgb 150 150 150))}]
-         [:100% {:background (linear-gradient "to top" (rgb 100 100 100) (rgb 255 255 255))}]]})
+      (mapv
+        (fn [t]
+          [(str (* t 100) "%")
+           {:background
+            (apply (partial repeating-linear-gradient (str (* t 360) "deg"))
+              [[(rgb 50 50 50) "0px"] [(rgb 50 50 50) (str (int (+ 8 (* t -8))) "px")] [(rgb 255 255 255) "8px"] [(rgb 255 255 255) "16px"]])}])
+        (range 0 1 0.001))})
    ])
 
 (defn css-rules [params]

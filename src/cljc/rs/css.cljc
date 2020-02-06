@@ -32,6 +32,7 @@
 (defn rotate3d [& d] (gt/->CSSFunction "rotate3d" d))
 (defn perspective [& d] (gt/->CSSFunction "perspective" d))
 (defn linear-gradient [& d] (gt/->CSSFunction "linear-gradient" d))
+(defn repeating-linear-gradient [& d] (gt/->CSSFunction "repeating-linear-gradient" d))
 (defn repeet  [& d] (gt/->CSSFunction "repeat" d))
 
 (def css-transition-group

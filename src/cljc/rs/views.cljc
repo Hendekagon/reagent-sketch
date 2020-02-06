@@ -4,7 +4,6 @@
    that make view components for the UI
   "
   (:require
-    [oops.core :refer [oget]]
     [garden.core :as gc :refer [css]]
     [garden.color :as color :refer [hsl rgb hsla rgba hex->rgb as-hex]]
     [garden.units :as u :refer [px pt em ms percent defunit]]
@@ -13,8 +12,8 @@
     [rs.css :as rcss :refer [fr rad deg rotate3d perspective translate strs sassify-rule named?]]
     [rs.actions :as actions]
     [clojure.string :as string]
-    [rs.css :as css]))
-
+    [rs.css :as rcss]
+    [rs.events :refer [on str-number]]))
 
 (defn css-view
  "
@@ -35,15 +34,6 @@
             (map sassify-rule (partition 2 l)) l))
     (if (map? rules) rules (partition-by :identifier rules))))]))
 
-(defn on [{{convert :convert :or {convert identity}
-           prevent-default? :prevent-default?}
-           :params :as message}]
-  (fn [e]
-    (let [v (try (oget e [:target :value])
-              (catch js/Error error nil))]
-      (actions/handle-message!
-       (assoc-in message [:params :target :value] (convert v))))))
-
 (defn input-text-view
   "
     Returns a textarea component
@@ -57,7 +47,7 @@
     :title title
     :value v
     :on-change
-    (on {:params {:path path}})
+    (on {:change :thing} {:path path})
     }])
 
 (defn input-number-view
@@ -72,37 +62,8 @@
     :step step
     :value v
     :on-change
-    (on {:params {:path path :convert (fn [v] (js/parseFloat v))}})
+    (on {:change :thing} {:path path :convert str-number})
     }])
-
-
-
-(defn animation-rules []
-  [
-   (gt/->CSSAtRule :keyframes
-                   {:identifier :rotation
-                    :frames
-                      [
-                       [:0% {:transform (translate (percent 0) (percent 0))}]
-                       [:25% {:transform (translate (percent 0) (percent -25))}]
-                       [:50% {:transform (translate (percent -25) (percent 0))}]
-                       [:75% {:transform (translate (percent 0) (percent 25))}]
-                       [:100% {:transform (translate (percent 0) (percent 0))}]
-                       ]
-                    })
-   ["#card1"
-    {
-     :background                (hsla 168 100 80 1)
-     :height                    (px 200)
-     :width                     (px 200)
-     :display                   "table"
-     :margin                    "auto"
-     :animation-name            :rotation
-     :animation-duration        (ms 10000)
-     :animation-iteration-count :infinite
-     :animation-timing-function :linear
-     }]])
-
 
 (defn root-view
   "
