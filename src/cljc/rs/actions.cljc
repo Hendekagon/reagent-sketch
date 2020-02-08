@@ -16,12 +16,14 @@
     [garden.color :as color :refer [hsl rgb rgba hex->rgb as-hex]]
     [garden.units :as u :refer [percent px pt em ms]]
     [garden.types :as gt]
+    [rs.css :as rcss :refer [fr rad deg %]]
     [clojure.string :as string]))
 
 ; this is the entire state of the application
 ; note the use of a Reagent atom when this runs
 ; as Clojurescript or a normal Clojure atom if this
 ; is running in Clojure
+
 (defonce app-state
   #?(:cljs (ra/atom nil) :clj (atom nil)))
 
@@ -31,14 +33,41 @@
 
 (defn change-text
   ([state {value :value {tv :value} :target path :path :as msg}]
-    (assoc-in state path (or value tv))))
+    (assoc-in state (conj path :value) (or value tv))))
+
+(defn ndom
+  ([i x]
+   (println (apply str (concat (repeat i "  ") [x])))
+    (if (or (list? x) (and (vector? x) (not (keyword? (first x)))))
+      (map (partial ndom (inc i)) x)
+      (let [[t c] x]
+        (case [t (empty? c)]
+          [:#text false] [:div c]
+          [:div false]   [:div (ndom (inc i) c)]
+          [:div true]    [:div]
+          [:br true]     [:div]
+          x)))))
+
+(defn debug-text
+  ([state {dom :dom-tree
+           selection :selection :as msg}]
+   (println "-" selection)
+   (println ">*" (ef/at [:div] (ef/div "qwe")))
+   state))
+
+(defn change-dom-tree
+  ([state {dom :dom-tree path :path :as msg}]
+    (assoc-in state (conj path :value) (ndom 0 dom))))
 
 (declare initialize-state)
 
 (defn make-event-map [state]
   {
-    {:click :reinitialize} initialize-state
-    {:change :thing}       change-thing
+    {:click :reinitialize}    initialize-state
+    {:change :thing}          change-thing
+    {:change :text}           change-text
+    {:debug :text}            debug-text
+    {:change :dom-tree}       debug-text
   })
 
 (defn reset-css [state]
@@ -49,12 +78,11 @@
    (make-state
      {
       :params
-       {
-         :colour (rgb 255 0 0)
-         :text "hi there"
-         :number {:min -1 :max 16 :value 5 :step 0.1}
+      {
+       :text {:value "this and that" :kind :text :name "Message"}
+       :number {:unit :double :min -16 :max 16 :magnitude 5 :step 0.1 :name "a number"}
        }
-     }))
+      }))
     ([state]
       (-> state
         (assoc :event-map (make-event-map state))

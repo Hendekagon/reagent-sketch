@@ -9,11 +9,15 @@
     [garden.units :as u :refer [px pt em ms percent defunit]]
     [garden.types :as gt]
     [garden.selectors :as gs]
-    [rs.css :as rcss :refer [fr rad deg rotate3d perspective translate strs sassify-rule named?]]
+    [rs.css :as rcss :refer [fr rad deg % rotate3d perspective
+                             translate strs sassify-rule named?]]
     [rs.actions :as actions]
+    [rs.conversion :refer [convert str-number to-number]]
     [clojure.string :as string]
-    [rs.css :as rcss]
-    [rs.events :refer [on str-number]]))
+    #?(:cljs [rs.events :as re])))
+
+(defonce on #?(:cljs re/on
+           :clj (fn [ma me] (fn [e] (actions/handle-message! {:match ma :message me})))))
 
 (defn css-view
  "
@@ -34,25 +38,28 @@
             (map sassify-rule (partition 2 l)) l))
     (if (map? rules) rules (partition-by :identifier rules))))]))
 
-(defn input-text-view
-  "
-    Returns a textarea component
-    that changes the :text key of the state
-  "
-  [{v :value title :title path :path id :id}]
-  [:input.text-input
+(defmulti view
+  (fn [{:keys [unit kind] :as p}]
+    (cond
+      unit :range
+      :otherwise kind)))
+
+(defmethod view :text
+  [{v :value title :name path :path}]
+  [:textarea.text-input
    {
-    :type :textarea
-    :id id
+    :cols 16
+    :rows 16
+    :wrap :soft
     :title title
     :value v
     :on-change
-    (on {:change :thing} {:path path})
+    (on {:change :text} {:path path})
     }])
 
-(defn input-number-view
-  "Returns an input view that converts to/from a number"
-  [{v :value min :min max :max step :step title :title path :path}]
+(defmethod view :range
+  [{v :magnitude u :unit min :min max :max step :step
+    title :name path :path cfn :convert :as p}]
   [:input.range-input
    {
     :type :range
@@ -60,10 +67,40 @@
     :min min
     :max max
     :step step
-    :value v
+    :value (to-number v)
     :on-change
-    (on {:change :thing} {:path path :convert str-number})
+    (on {:change :thing} {:path path :convert (partial (or cfn convert) p)})
     }])
+
+(defn params-view [{:keys [text number colour] :as params}
+                   {:keys [main component animation] :as css}]
+  (into [:div.params]
+    (concat
+     (map
+       (fn [[key param]]
+         [:div.param
+          [:div.param-name (:name param)]
+          [:div.param-value
+            [view (assoc param :path (conj [:params] key))]]])
+       params)
+     (map
+       (fn [[key style]]
+         [:div.param
+           [:div.param-name (:name style)]
+          [:div.param-value
+            [view (assoc style :path (conj [:css :component ".columns"] key))]]])
+       [[:column-gap (get-in component [".columns" :column-gap])]
+        [:column-count (get-in component [".columns" :column-count])]]))))
+
+(defn preview-view  [{:keys [text number colour] :as params}]
+  [:div.preview
+   (into
+     [:div.columns
+       {:contentEditable true :suppressContentEditableWarning true
+        :on-input (on {:change :dom-tree} {:path [:params :text]})
+        :on-select (on {:debug :text} {:path [:params :text]})}]
+       (if (string? (:value text)) [(:value text)] (:value text)))
+   [:div.number (:magnitude number)]])
 
 (defn root-view
   "
@@ -72,21 +109,18 @@
 
     We only pass the data each view needs
 
-    Each component has its own CSS where possible
   "
   ([] (root-view @actions/app-state))
-  ([{{:keys [text number colour]} :params
-     {:keys [main component animation]} :css
-     :as state}]
+  ([{params :params
+     {:keys [main component animation] :as css} :css
+      :as state}]
    [:div.root
-    [css-view :main-rules {:vendors ["webkit" "moz"] :auto-prefix #{:column-width :user-select}} main]
+    [css-view :main-rules {:vendors ["webkit" "moz"]
+                           :auto-prefix #{:column-width :user-select}} main]
     [css-view :animation-rules {} animation]
     [css-view :component-rules {} component]
     [:div.main
-      [:div.params
-        [input-text-view {:path [:params :text] :value text}]
-        [input-number-view (assoc number :path [:params :number :value] :title "Number")]]
-      [:div.preview
-        [:div text]
-        [:div (:value number)]]
+      [:div {:on-click (on {:click :reinitialize} {})} "reset"]
+      [params-view params css]
+      [preview-view params]
     ]]))

@@ -10,8 +10,7 @@
     com.bhauman/figwheel-main {:git/url "https://github.com/bhauman/figwheel-main.git" :sha "1d400dbdfd5b0b2dffda854ae52ba29ee55309e7"}
     com.bhauman/rebel-readline-cljs {:mvn/version "0.1.4"}
 
-    cljs-ajax {:mvn/version "0.7.5"}
-    cljs-bean {:mvn/version "1.0.0"}
+    cljs-bean {:mvn/version "1.5.0"}
     appliedscience/js-interop {:mvn/version "0.1.20"}
     binaryage/oops {:mvn/version "0.6.2"}
     reagent {:mvn/version "0.8.1"}

@@ -19,7 +19,8 @@
 (defunit deg)
 (defunit vh)
 (defunit vw)
-(def p% percent)
+(defunit item "")
+(def % percent)
 
 (defn minmax [& d] (gt/->CSSFunction "minmax" d))
 (defn calc [& d] (gt/->CSSFunction "calc" d))
@@ -34,15 +35,6 @@
 (defn linear-gradient [& d] (gt/->CSSFunction "linear-gradient" d))
 (defn repeating-linear-gradient [& d] (gt/->CSSFunction "repeating-linear-gradient" d))
 (defn repeet  [& d] (gt/->CSSFunction "repeat" d))
-
-(def css-transition-group
-  #?(:cljs :not-implemented-in-cljs-either
-     ;(r/adapt-react-class js/React.addons.CSSTransitionGroup)
-     :clj  :not-implemented-in-clj))
-
-(defn with-transition [parent properties children]
-  [css-transition-group (assoc properties :component (name (first parent)))
-   (map-indexed (fn [i child] (with-meta child (or (meta child) {:key i}))) children)])
 
 (def css-str (comp first gcomp/render-css gcomp/expand))
 

@@ -4,7 +4,8 @@
     [garden.units :as u :refer [defunit px percent pc pt em ms]]
     [garden.types :as gt]
     [garden.arithmetic :as ga]
-    [rs.css :refer [fr vw vh p% repeating-linear-gradient calc repeet areas]]))
+    [rs.conversion :refer [str-number]]
+    [rs.css :refer [fr vw vh % item repeating-linear-gradient calc repeet areas]]))
 
 (defn main-rules [params]
   {
@@ -18,9 +19,9 @@
    {
     :background (rgb 30 30 30)
     :color (hsl 0 0 100)
-    :width (p% 100)
+    :width (% 100)
     :border-color (rgb 255 0 0)
-    :border-width (px 1.1)
+    :border-width (px 0)
     :border-style :solid
     :display :flex
     :flex-flow '[[row nowrap]]
@@ -36,6 +37,7 @@
            :cursor :default
            :padding 0
            :margin 0
+           :overflow-x :hidden
            }
    })
 
@@ -44,34 +46,73 @@
    ".params"
    {
     :padding (em 1)
-    :width (p% 50)
+    :width (% 50)
     :display :flex
     :flex-flow '[[column nowrap]]
     }
    ".range-input"
    {
-    ;:width (em 10)
+    :width (% 100)
     }
    ".text-input"
    {
-    ;:width (em 16)
+    :padding (em 0.5)
+    :background (rgb 10 10 10)
+    :color (rgb 255 255 255)
+    :border :none
+    :width (% 100)
+    :height (em 16)
+    :resize :vertical
+    :font-size (em 1)
+    }
+   ".param"
+   {
+    :display :flex
+    :flex-flow '[[row nowrap]]
+    :justify-content :center
+    :align-items :center
+    :width (% 100)
+    :margin-bottom (em 1)
+    }
+   ".param-name"
+   {
+    :font-size (em 1)
+    :height (em 2)
+    :width (% 30)
+    :display :flex
+    :align-items :center
+    }
+   ".param-value"
+   {
+    :font-size (em 1)
+    :width (% 70)
+    :display :flex
+    :align-items :center
     }
    ".preview"
    {
     :background (rgb 50 50 50)
     :padding (em 1)
-    :width (p% 50)
-    :display :flex
-    :flex-flow '[[column nowrap]]
+    :width (% 50)
     }
-    ".preview>div"
-    {
-      :margin-top (em 1)
+   ".columns"
+   {
+    :background (rgb 50 50 50)
+    :column-count (-> (item 3) (assoc :min 1 :max 5 :step 1 :name "Columns"))
+    :column-gap (assoc (% 2) :min 1 :max 16 :step 0.1 :name "Column gap")
+    }
+   ".preview>div"
+   {
+    :margin-top (em 1)
+    }
+   ".number"
+   {
+    :font-size (em 4)
     }
    ".ani"
    {
-    :animation-name            :gradient-flow
-    :animation-duration        (ms 20000)
+    :animation-name :gradient-flow
+    :animation-duration (ms 20000)
     :animation-iteration-count :infinite
     :animation-timing-function :linear
     }
