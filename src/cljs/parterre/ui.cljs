@@ -1,11 +1,11 @@
-(ns ^:figwheel-hooks rs.ui
+(ns ^:figwheel-hooks parterre.ui
   "
     This namespace (re)starts the UI
   "
   (:require
     [reagent.core :as r]
-    [rs.actions :as actions]
-    [rs.views :as views]))
+    [parterre.actions :as actions]
+    [parterre.views :as views]))
 
 (defn ^:before-load before-start!
   [& q]

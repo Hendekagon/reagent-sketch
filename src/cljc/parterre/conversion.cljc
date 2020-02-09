@@ -1,7 +1,7 @@
-(ns rs.conversion
+(ns parterre.conversion
   (:require
     [garden.units :as u :refer [px percent pc pt em ms]]
-    [rs.css :refer [fr vw vh % item]]))
+    [parterre.css :refer [fr vw vh % ï]]))
 
 (defn str-number [v]
   #?(:cljs (js/parseFloat v)
@@ -17,7 +17,7 @@
   (merge p (% (str-number s))))
 
 (defmethod convert (keyword "") [p s]
-  (merge p (item (str-number s))))
+  (merge p (ï (str-number s))))
 
 (defn to-number [x]
   (cond

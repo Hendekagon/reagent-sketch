@@ -4,7 +4,7 @@
 ;
 {
  :watch-dirs ["src/cljc" "src/cljs"]
- :main                 "rs.main"
+ :main                 "parterre.main"
  :asset-path           "js"
  :source-map           true
  :source-map-timestamp true

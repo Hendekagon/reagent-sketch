@@ -1,4 +1,4 @@
-(ns rs.css
+(ns parterre.css
   "
     CSS things - extra functions and definitions for CSS
     and some CSS rules
@@ -19,7 +19,7 @@
 (defunit deg)
 (defunit vh)
 (defunit vw)
-(defunit item "")
+(defunit ï "")
 (def % percent)
 
 (defn minmax [& d] (gt/->CSSFunction "minmax" d))
@@ -36,13 +36,13 @@
 (defn repeating-linear-gradient [& d] (gt/->CSSFunction "repeating-linear-gradient" d))
 (defn repeet  [& d] (gt/->CSSFunction "repeat" d))
 
-(def css-str (comp first gcomp/render-css gcomp/expand))
-
 (defn strs [l]
-  (string/join "" (map (fn [x] (str "\"" (apply str (interpose " " x)) "\"")) l)))
+  (string/join " "
+   (map (fn [x] (str "\"" (string/join " " x) "\"")) l)))
 
 (defn strz [l]
-  (apply str (map (fn [x] (str "\"" (apply str (interpose " " (map css x))) "\"")) l)))
+  (apply str
+   (map (fn [x] (str "\"" (string/join " " (map css x)) "\"")) l)))
 
 (def areas strs)
 

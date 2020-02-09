@@ -19,13 +19,13 @@ It displays a table of things that change the application's state:
 
 CSS is handled completely by Garden, both statically and dynamically in a few different ways.
 
-The application is represented by 1 Reagent atom which contains everything and event handlers (in rs.views) that delegate to pure functions (in rs.actions) to change the state as a function of their events
+The application is represented by 1 Reagent atom which contains everything and event handlers (in parterre.views) that delegate to pure functions (in parterre.actions) to change the state as a function of their events
 
 Namespaces:
 
-* `rs.views` functions for making Reagent views of data. Views are React objects that display data or determine the style of other views
+* `parterre.views` functions for making Reagent views of data. Views are React objects that display data or determine the style of other views
   
-* `rs.actions` functions for changing application state
+* `parterre.actions` functions for changing application state
 
 ## Usage
 
