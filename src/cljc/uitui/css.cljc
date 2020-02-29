@@ -10,6 +10,7 @@
     [garden.compiler :as gcomp]
     [garden.types :as gt]
     [garden.stylesheet :refer [at-media]]
+    [clojure.walk :as w]
     [clojure.string :as string]))
 
 ; define some CSS units missing from garden.units:
@@ -53,6 +54,8 @@
   (if (named? x)
     (name x)
     x))
+
+(def ç gcomp/render-css)
 
 (defn sassify-rule
   "

@@ -10,7 +10,7 @@
     [garden.units :as u :refer [px pt em ms percent defunit]]
     [garden.types :as gt]
     [garden.selectors :as gs]
-    [uitui.css :as rcss :refer [fr rad deg % rotate3d perspective
+    [uitui.css :as rcss :refer [ç fr rad deg % rotate3d perspective
                                    rotate translate strs sassify-rule named?]]
     [uitui.actions :as actions]
     [uitui.conversion :refer [convert str-number to-number]]
@@ -42,9 +42,27 @@
       unit :range
       :otherwise kind)))
 
+(defmethod view :animal
+  [{[x y] :position path :path title :title naym :name species :species :as p}]
+    [:div.animal
+     {:style {:transform (ç (translate (px x) (px y)))}
+      :title (or naym title "animal")
+      :on-mouse-down (on {:mouse-down :thing} p)
+      :on-mouse-up   (on {:mouse-up :thing} p)} (name species)])
+
+(defmethod view :text
+  [{v :text path :path title :title :as p}]
+  [:textarea.text-input
+   {
+    :title title
+    :value v
+    :on-change
+      (on {:change :text} {:path path :convert (fn [s] (assoc p :text s))})
+    }])
+
 (defmethod view :range
-  [{{v :magnitude u :unit min :min max :max step :step
-     title :name :as va} :value path :path cfn :convert :as p}]
+  [{{v :magnitude u :unit min :min max :max step :step :as va} :value
+    title :title path :path cfn :convert :as p}]
   [:input.range-input
    {
     :type :range
@@ -61,18 +79,24 @@
   (into [:div.params]
     (map
       (fn [[k v]]
-        [:div {:class (if (:unit v) :param :param-box)}
+        [:div.param
           [:div.param-name-value
             [:div.param-name (name k)]
            (cond (:unit v) [:div.param-value (str (:magnitude v) (name (:unit v)))])]
          (if (:unit v)
-           [view {:value v :path (conj path k)}]
-           [view {:kind :params :path (conj path k) :params v}])])
+           [view {:value v :path (conj path k) :title k}]
+           [view (assoc v :path (conj path k) :title k)])])
       params)))
 
-(defmethod view :main [{path :path params :params}]
-  [:div.main
-    [view {:kind :params :path path :params params}]])
+(defmethod view :main [{path :path params :params animals :animals title :title}]
+  (into [:div.main
+         ;[:div.title (str title)]
+    [view {:kind :params :path path :params params}]]
+    (map (fn [[k v]] [view (assoc v :path (conj path k) :title k)]) animals)))
+
+(defmethod view :animals [{path :path animals :animals}]
+  (into [:div.animals]
+    (map (fn [[k v]] [view (assoc v :path (conj path k) :title k)]) animals)))
 
 (defn root-view
   "
@@ -85,10 +109,16 @@
   "
   ([] (root-view @actions/app-state))
   ([{{:keys [main component animation] :as css} :css
-      params :params :as state}]
+      params :params animals :animals :as state}]
    [:div.root
+    {
+      :on-mouse-move (on {:mouse-move :root :with [:buttons]} {})
+    }
     [css-view :main-rules {:vendors ["webkit" "moz"] :auto-prefix #{:column-width :user-select}} main]
     [css-view :animation-rules {} animation]
     [css-view :component-rules {} component]
-    [view {:kind :main :path [:params] :params params}]
+    [view {:kind :main :path [:params] :params params
+           :animals animals
+           :title (select-keys state [:mouse :moving :debug])}]
+    [view {:kind :animals :path [:animals] :animals animals}]
   ]))

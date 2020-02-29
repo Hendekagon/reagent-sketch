@@ -15,6 +15,7 @@
            :font-size (em 1)
            :font-weight :normal
            :cursor :default
+           :user-select :text
            :padding 0
            :margin 0
            :overflow-x :hidden
@@ -33,29 +34,43 @@
 
 (defn component-rules [params]
   {
-   ".range-input"
-   {
-    :width (px 128)
-    }
    ".main"
    {
     :background (rgb 10 10 10)
     :width (% 100)
     :height (% 100)
     :display :grid
-    :grid-template-columns [(fr 1) (% 70) (fr 1)]
+    :grid-template-columns [[(fr 1) (% 80) (fr 1)]]
     :grid-template-rows (repeet (ï 3) (fr 1))
-    :grid-template-areas (areas '[[a b c]
-                                  [d e f]
-                                  [g h i]])
+    :grid-template-areas (areas '[[a title c]
+                                  [d params f]
+                                  [g footer i]])
     :justify-items :center
     :align-items :center
     }
+   ".title"
+   {
+    :grid-area :title
+    :color (rgb 255 255 255)
+    }
    ".params"
    {
-    :grid-area :e
+    :grid-area :params
+    :width (% 70)
+    :height (% 100)
     :display :flex
-    :flex-flow [[:row :wrap]]
+    :flex-flow [[:column :wrap]]
+    :justify-content :space-between
+    :align-items :space-between
+    :padding (px 16)
+    :border-radius (px 3)
+    :background (rgba 100 100 100 0.5)
+    :color (rgb 255 255 255)
+    }
+   ".param"
+   {
+    :display :flex
+    :flex-flow [[:column :wrap]]
     :justify-content :space-between
     :align-items :space-between
     :padding (px 8)
@@ -63,29 +78,45 @@
     :background (rgba 100 100 100 0.5)
     :color (rgb 255 255 255)
     }
-   ".param-box"
-   {
-    :display :flex
-    :flex-flow [[:column :nowrap]]
-    :justify-content :flex-start
-    }
    ".param-name-value"
    {
     :display :flex
     :flex-flow [[:row :nowrap]]
     :justify-content :space-between
     }
+   ".range-input"
+   {
+    :width (% 100)
+    }
+   ".text-input"
+   {
+    :background (rgb 40 40 40)
+    :color (rgb 255 255 255)
+    :padding (em 1)
+    :border :none
+    :border-radius (px 2)
+    :resize :vertical
+    }
+   ".animal"
+   {
+    :width (px 64)
+    :height (px 64)
+    :top 0 :left 0
+    :font-size (px 64)
+    :background :none
+    :position :absolute
+    }
    ".ani-rotating-gradient-0"
    {
     :animation-name :rotating-gradient-0
-    :animation-duration (ms 20000)
+    :animation-duration (ms 2000)
     :animation-iteration-count :infinite
     :animation-timing-function :linear
     }
-    ".ani-rotating-gradient-1"
+   ".ani-rotating-gradient-1"
    {
     :animation-name :rotating-gradient-1
-    :animation-duration (ms 20000)
+    :animation-duration (ms 2000)
     :animation-iteration-count :infinite
     :animation-timing-function :linear
     }
@@ -102,7 +133,7 @@
            {:background
             (apply (partial repeating-linear-gradient (str (* t 360) "deg"))
               [[(rgb 50 50 50) "0px"] [(rgb 50 50 50) (str (int (+ 8 (* t -8))) "px")] [(rgb 255 255 255) "8px"] [(rgb 255 255 255) "16px"]])}])
-        (range 0 1 0.001))})
+        (range 0 1 0.01))})
     (gt/->CSSAtRule :keyframes
      {:identifier :rotating-gradient-1
       :frames
@@ -112,7 +143,7 @@
            {:background
             (apply (partial repeating-linear-gradient (str (* t 360) "deg"))
               [[(rgb 50 50 50) "0px"] [(rgb 50 50 50) (str (int (+ 8 (* t -8))) "px")] [(rgb 255 255 255) "8px"] [(rgb 255 255 255) "16px"]])}])
-        (range 1 0 -0.001))})
+        (range 1 0 -0.01))})
    ])
 
 (defn css-rules [params]
