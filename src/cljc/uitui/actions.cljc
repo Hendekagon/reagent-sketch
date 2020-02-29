@@ -20,10 +20,7 @@
     [uitui.css :as rcss :refer [fr rad deg %]]
     [clojure.string :as string]))
 
-(defonce app-state
-  #?(:cljs (ra/atom nil) :clj (atom nil)))
-
-(declare initialize-state)
+(declare make-state)
 
 (defn assoc-in*
   ([state {value :value path :path :as msg}]
@@ -55,11 +52,16 @@
     (assoc-in [:css :main "body" :user-select] :text)
     (update :moving disj path)))
 
+(defn after-reload [state _]
+  (println "reload")
+  (make-state))
+
 (defn make-event-map [state]
   {
-    {:click :reinitialize}    initialize-state
-    {:change :range-slider}   assoc-in*
-    {:change :text}   assoc-in*
+    {:app :reloaded}               after-reload
+    {:click :reinitialize}         make-state
+    {:change :range-slider}        assoc-in*
+    {:change :text}                assoc-in*
     {:mouse-move :root :buttons 1} move-things
     {:mouse-down :thing} take-something
     {:mouse-up   :thing} drop-something
@@ -86,20 +88,16 @@
          :horse {:position [256 128] :says "neeiiighhhhhh" :kind :animal :name "Roger" :species :🦓}
        }))))
 
-(defn initialize-state
-  ([]
-    (initialize-state {} {}))
-  ([state message]
-   (-> (make-state)
-     (assoc :event-map (make-event-map state)))))
-
 (defn handle-message
   "Returns a new state from the given state and message"
   [{event-map :event-map :as state} {match :match message :message}]
   ((get event-map match identity) state message))
 
-(defn handle-message!
+(def handle-message!
   "Maybe updates the app state with
   a function that depends on the given message"
-  ([message]
-    (swap! app-state handle-message message)))
+  (let [state  #?(:cljs (ra/atom (make-state)) :clj (atom (make-state)))]
+    (fn
+      ([] state)
+      ([message]
+        (swap! state handle-message message)))))

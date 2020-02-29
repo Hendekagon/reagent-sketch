@@ -12,7 +12,6 @@
   (println "---before restart---"))
 
 (defn ^:after-load start! []
-  (if (or true (and @actions/app-state (:reload? @actions/app-state)) (nil? @actions/app-state))
-    (reset! actions/app-state (actions/initialize-state))
-    (swap! actions/app-state actions/reset-css))
-  (r/render [views/root-view] (.getElementById js/document "app")))
+  (let [root-view (views/make-root-view! (actions/handle-message!))]
+   (actions/handle-message! {:app :reloaded})
+   (r/render [root-view] (.getElementById js/document "app"))))

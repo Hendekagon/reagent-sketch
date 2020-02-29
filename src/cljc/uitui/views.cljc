@@ -12,7 +12,6 @@
     [garden.selectors :as gs]
     [uitui.css :as rcss :refer [ç fr rad deg % rotate3d perspective
                                    rotate translate strs sassify-rule named?]]
-    [uitui.actions :as actions]
     [uitui.conversion :refer [convert str-number to-number]]
     [clojure.string :as string]
     [uitui.events :as re :refer [on]]))
@@ -108,7 +107,6 @@
     each subview needs
 
   "
-  ([] (root-view @actions/app-state))
   ([{{:keys [main component animation] :as css} :css
       params :params animals :animals :as state}]
    [:div.root
@@ -123,3 +121,6 @@
            :title (select-keys state [:mouse :moving :debug])}]
     [view {:kind :animals :path [:animals] :animals animals}]
   ]))
+
+(defn make-root-view! [an-atom]
+  (fn [] (root-view @an-atom)))
