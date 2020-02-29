@@ -106,16 +106,13 @@
     :background :none
     :position :absolute
     }
+   ".animal.🦆"
+   {
+     :font-size (px 128)
+   }
    ".ani-rotating-gradient-0"
    {
     :animation-name :rotating-gradient-0
-    :animation-duration (ms 2000)
-    :animation-iteration-count :infinite
-    :animation-timing-function :linear
-    }
-   ".ani-rotating-gradient-1"
-   {
-    :animation-name :rotating-gradient-1
     :animation-duration (ms 2000)
     :animation-iteration-count :infinite
     :animation-timing-function :linear
@@ -134,16 +131,6 @@
             (apply (partial repeating-linear-gradient (str (* t 360) "deg"))
               [[(rgb 50 50 50) "0px"] [(rgb 50 50 50) (str (int (+ 8 (* t -8))) "px")] [(rgb 255 255 255) "8px"] [(rgb 255 255 255) "16px"]])}])
         (range 0 1 0.01))})
-    (gt/->CSSAtRule :keyframes
-     {:identifier :rotating-gradient-1
-      :frames
-      (mapv
-        (fn [t]
-          [(str (* t 100) "%")
-           {:background
-            (apply (partial repeating-linear-gradient (str (* t 360) "deg"))
-              [[(rgb 50 50 50) "0px"] [(rgb 50 50 50) (str (int (+ 8 (* t -8))) "px")] [(rgb 255 255 255) "8px"] [(rgb 255 255 255) "16px"]])}])
-        (range 1 0 -0.01))})
    ])
 
 (defn css-rules [params]

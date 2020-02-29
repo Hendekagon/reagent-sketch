@@ -1,7 +1,7 @@
 ; extra figwheel options
 {
   :watch-dirs ["src/cljc" "src/cljs"]
-  :open-url false
+  :open-url "http://localhost:9500/"
   :log-level :all
   :reload-dependents true
 }

@@ -20,11 +20,6 @@
     [uitui.css :as rcss :refer [fr rad deg %]]
     [clojure.string :as string]))
 
-; this is the entire state of the application
-; note the use of a Reagent atom when this runs
-; as Clojurescript or a normal Clojure atom if this
-; is running in Clojure
-
 (defonce app-state
   #?(:cljs (ra/atom nil) :clj (atom nil)))
 
@@ -83,12 +78,12 @@
         {
           :x (assoc (% 50) :min 0 :max 100 :step 1)
           :y (assoc (kW 100) :min 0 :max 256 :step 0.1)
-          :z {:text "Some text" :kind :text}
+          :z {:text "zzzzzzzzzzz" :kind :text}
         })
       (assoc :animals
        {
          :duck {:position [128 128] :says "quack" :kind :animal :species :🦆}
-         :horse {:position [256 128] :says "neighhhh" :kind :animal :name "Roger" :species :🐎}
+         :horse {:position [256 128] :says "neeiiighhhhhh" :kind :animal :name "Roger" :species :🦓}
        }))))
 
 (defn initialize-state
