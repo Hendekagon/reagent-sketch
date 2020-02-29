@@ -1,4 +1,4 @@
-(ns parterre.actions
+(ns uitui.actions
   "
     This namespace has functions
     that change the state of the application
@@ -12,11 +12,12 @@
   (:require
     [garden.core :as gc]
     #?(:cljs [reagent.ratom :as ra])
-    [parterre.style :as css]
+    [uitui.style :as css]
+    [uitui.conversion :refer [kW m]]
     [garden.color :as color :refer [hsl rgb rgba hex->rgb as-hex]]
-    [garden.units :as u :refer [percent px pt em ms]]
+    [garden.units :as u :refer [defunit percent px pt em ms]]
     [garden.types :as gt]
-    [parterre.css :as rcss :refer [fr rad deg %]]
+    [uitui.css :as rcss :refer [fr rad deg %]]
     [clojure.string :as string]))
 
 ; this is the entire state of the application
@@ -30,8 +31,8 @@
 (declare initialize-state)
 
 (defn assoc-in*
-  ([state {value :value {tv :value} :target path :path :as msg}]
-    (assoc-in state path (or value tv))))
+  ([state {value :value path :path :as msg}]
+    (assoc-in state path value)))
 
 (defn reset-css [state]
   (assoc state :css (css/css-rules {})))
@@ -42,12 +43,27 @@
     {:change :range-slider}   assoc-in*
   })
 
+(defn invent-data
+  ([n k]
+    (reduce
+      (fn [r p]
+        (assoc-in r p
+          (if (< (rand) 0.5)
+            (assoc (% 50) :min 0 :max 100 :step 1)
+            (assoc (kW 100) :min 0 :max 256 :step 0.1))))
+      {} (repeatedly n
+           (fn []
+             (reduce conj []
+                (repeatedly (inc (rand-int k))
+                   (fn [] (keyword (str (char (+ 97 (rand-int 26)))))))))))))
+
 (defn make-state
   ([] (make-state {}))
   ([state]
     (-> state
       (assoc :event-map (make-event-map state))
-      (assoc :css (css/css-rules {})))))
+      (assoc :css (css/css-rules {}))
+      (assoc :params (invent-data 8 8)))))
 
 (defn initialize-state
   ([]
@@ -65,6 +81,4 @@
   "Maybe updates the app state with
   a function that depends on the given message"
   ([message]
-    (swap! app-state
-      (fn [current-state]
-        (handle-message current-state message)))))
+    (swap! app-state handle-message message)))

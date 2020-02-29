@@ -1,11 +1,11 @@
-(ns parterre.style
+(ns uitui.style
   (:require
     [garden.color :as color :refer [hsl hsla rgb rgba hex->rgb as-hex]]
     [garden.units :as u :refer [defunit px percent pc pt em ms]]
     [garden.types :as gt]
     [garden.arithmetic :as ga]
-    [parterre.conversion :refer [str-number]]
-    [parterre.css :refer [fr vw vh % ï repeating-linear-gradient calc repeet areas]]))
+    [uitui.conversion :refer [str-number]]
+    [uitui.css :refer [fr vw vh % ï repeating-linear-gradient calc repeet areas]]))
 
 (defn main-rules [params]
   {
@@ -37,54 +37,54 @@
    {
     :width (px 128)
     }
-   ".soil"
+   ".main"
    {
-    :background (rgb 30 10 10)
-    :width  (vh 90)
-    :height (vh 90)
+    :background (rgb 10 10 10)
+    :width (% 100)
+    :height (% 100)
     :display :grid
-    :grid-template-columns (repeet (ï 3) (% 33.3))
-    :grid-template-rows (repeet (ï 3) (% 33.3))
+    :grid-template-columns [(fr 1) (% 70) (fr 1)]
+    :grid-template-rows (repeet (ï 3) (fr 1))
     :grid-template-areas (areas '[[a b c]
                                   [d e f]
                                   [g h i]])
     :justify-items :center
     :align-items :center
     }
-   ".hedge"
+   ".params"
    {
-    :background (rgb 20 40 20)
-    :width  (% 80)
-    :height (% 80)
-    }
-   ".parterre-1"
-   {
-    :background (rgb 90 50 50)
-    :width (% 80)
-    :height (% 80)
     :grid-area :e
-    :display :grid
-    :grid-template-columns (repeet (ï 2) (% 50))
-    :grid-template-rows    (repeet (ï 2) (% 50))
-    :grid-row-gap (assoc (% 2) :min 1 :max 16 :step 0.1)
-    :justify-items :center
-    :align-items :center
+    :display :flex
+    :flex-flow [[:row :wrap]]
+    :justify-content :space-between
+    :align-items :space-between
+    :padding (px 8)
+    :border-radius (px 3)
+    :background (rgba 100 100 100 0.5)
+    :color (rgb 255 255 255)
     }
-   ".parterre-0"
+   ".param-box"
    {
-    :background (rgb 50 90 50)
-    :width (% 80)
-    :height (% 80)
-    :display :grid
-    :grid-template-columns (repeet (ï 3) (% 33.3))
-    :grid-template-rows    (repeet (ï 3) (% 33.3))
-    :grid-column-gap (assoc (% 2) :min 1 :max 16 :step 0.1)
-    :justify-items :center
-    :align-items :center
+    :display :flex
+    :flex-flow [[:column :nowrap]]
+    :justify-content :flex-start
     }
-   ".ani"
+   ".param-name-value"
    {
-    :animation-name :gradient-flow
+    :display :flex
+    :flex-flow [[:row :nowrap]]
+    :justify-content :space-between
+    }
+   ".ani-rotating-gradient-0"
+   {
+    :animation-name :rotating-gradient-0
+    :animation-duration (ms 20000)
+    :animation-iteration-count :infinite
+    :animation-timing-function :linear
+    }
+    ".ani-rotating-gradient-1"
+   {
+    :animation-name :rotating-gradient-1
     :animation-duration (ms 20000)
     :animation-iteration-count :infinite
     :animation-timing-function :linear
@@ -94,7 +94,7 @@
 (defn animation-rules [params]
   [
    (gt/->CSSAtRule :keyframes
-     {:identifier :gradient-flow
+     {:identifier :rotating-gradient-0
       :frames
       (mapv
         (fn [t]
@@ -103,6 +103,16 @@
             (apply (partial repeating-linear-gradient (str (* t 360) "deg"))
               [[(rgb 50 50 50) "0px"] [(rgb 50 50 50) (str (int (+ 8 (* t -8))) "px")] [(rgb 255 255 255) "8px"] [(rgb 255 255 255) "16px"]])}])
         (range 0 1 0.001))})
+    (gt/->CSSAtRule :keyframes
+     {:identifier :rotating-gradient-1
+      :frames
+      (mapv
+        (fn [t]
+          [(str (* t 100) "%")
+           {:background
+            (apply (partial repeating-linear-gradient (str (* t 360) "deg"))
+              [[(rgb 50 50 50) "0px"] [(rgb 50 50 50) (str (int (+ 8 (* t -8))) "px")] [(rgb 255 255 255) "8px"] [(rgb 255 255 255) "16px"]])}])
+        (range 1 0 -0.001))})
    ])
 
 (defn css-rules [params]
