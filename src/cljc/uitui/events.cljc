@@ -14,8 +14,7 @@
                  :as message}]
   #?(:cljs
       (fn [e]
-        (let [ev (reduce (fn [r k] (assoc r k (try (oget+ e [:nativeEvent k]) (catch js/Error error nil)))) {}
-                  [:clientX :clientY :offsetX :offsetY :buttons :shiftKey])
+        (let [ev (bean (oget+ e [:nativeEvent]) :recursive true)
               tv (try (oget e [:target :value])
                   (catch js/Error error nil))]
          (actions/handle-message!
