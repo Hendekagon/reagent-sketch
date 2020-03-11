@@ -45,10 +45,10 @@
   [{[x y] :position path :path title :title naym :name species :species :as p}]
     [:div.animal
      {:style {:transform (ç (translate (px x) (px y)))}
-      :class (name species)
+      :class species
       :title (or naym title "animal")
       :on-mouse-down (on {:mouse-down :thing} p)
-      :on-mouse-up   (on {:mouse-up :thing} p)} (name species)])
+      :on-mouse-up (on {:mouse-up :thing} p)} species])
 
 (defmethod view :text
   [{v :text path :path title :title :as p}]

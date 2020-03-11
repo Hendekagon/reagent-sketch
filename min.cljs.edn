@@ -1,6 +1,6 @@
 ; Clojurescript compilation options - run this in a terminal:
 ;
-; clj -A:resources -m figwheel.main -b dev -r
+; clj -A:resources -m figwheel.main -b min
 ;
 {
  :watch-dirs ["src/cljc" "src/cljs"]

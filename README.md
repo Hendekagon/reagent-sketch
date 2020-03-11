@@ -14,7 +14,7 @@ Even if this project's code isn't directy useful to you, I hope these two concep
 
 ### What it does
 
-It displays a table of parameters that can be changed that's all*
+It displays a table of parameters that can be changed that's all
 
 ### How it works
 

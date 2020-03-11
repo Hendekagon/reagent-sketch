@@ -83,10 +83,10 @@
           :z {:text "zzzzzzzzzzz" :kind :text}
         })
       (assoc :animals
-       {
-         :duck {:position [128 128] :says "quack" :kind :animal :species :🦆}
-         :horse {:position [256 128] :says "neeiiighhhhhh" :kind :animal :name "Roger" :species :🦓}
-       }))))
+        {
+         :duck {:position [128 128] :says "quack" :kind :animal :species "🦆"}
+         :horse {:position [256 128] :says "neeiiighhhhhh" :kind :animal :name "Roger" :species "🦓"}
+         }))))
 
 (defn handle-message
   "Returns a new state from the given state and message"
