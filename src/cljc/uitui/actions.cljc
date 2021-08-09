@@ -40,7 +40,8 @@
           (assoc thing :position (mapv - mouse offset)))))
     (move-mouse state m) moving))
 
-(defn take-something [state {path :path {:keys [clientX clientY offsetX offsetY] :as e} :event}]
+(defn take-something
+  [state {path :path {:keys [clientX clientY offsetX offsetY] :as e} :event}]
   (-> state
     (assoc :mouse [clientX clientY])
     (assoc-in [:css :main "body" :user-select] :none)
@@ -63,8 +64,8 @@
     {:change :range-slider}        assoc-in*
     {:change :text}                assoc-in*
     {:mouse-move :root :buttons 1} move-things
-    {:mouse-down :thing} take-something
-    {:mouse-up   :thing} drop-something
+    {:mouse-down :thing}           take-something
+    {:mouse-up   :thing}           drop-something
   })
 
 (defn make-state
@@ -80,12 +81,12 @@
         {
           :x (assoc (% 50) :min 0 :max 100 :step 1)
           :y (assoc (kW 100) :min 0 :max 256 :step 0.1)
-          :z {:text "zzzzzzzzzzz" :kind :text}
+          :z {:text "abc" :kind :text}
         })
       (assoc :animals
         {
          :duck {:position [128 128] :says "quack" :kind :animal :species "🦆"}
-         :horse {:position [256 128] :says "neeiiighhhhhh" :kind :animal :name "Roger" :species "🦓"}
+         :horse {:position [256 128] :says "neeiiighhhhhh" :kind :animal :name "Roger" :species "🐎"}
          }))))
 
 (defn handle-message

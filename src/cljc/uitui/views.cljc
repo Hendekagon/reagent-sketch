@@ -11,7 +11,7 @@
     [garden.types :as gt]
     [garden.selectors :as gs]
     [uitui.css :as rcss :refer [ç fr rad deg % rotate3d perspective
-                                   rotate translate strs sassify-rule named?]]
+                                   rotate translate strs named?]]
     [uitui.conversion :refer [convert str-number to-number]]
     [clojure.string :as string]
     [uitui.events :as re :refer [on]]))
@@ -32,16 +32,13 @@
       (mapcat
         (fn [[f & _ :as l]]
           (if (or (string? f) (named? f))
-            (map sassify-rule (partition 2 l)) l))
-    (if (map? rules) rules (partition-by :identifier rules))))]))
+            (map vec (partition 2 l)) l))
+        rules))]))
 
 (defmulti view
-  (fn [{{:keys [unit]} :value kind :kind}]
-    (cond
-      unit :range
-      :otherwise kind)))
+  (juxt :kind :api))
 
-(defmethod view :animal
+(defmethod view [:animal :html]
   [{[x y] :position path :path title :title naym :name species :species :as p}]
     [:div.animal
      {:style {:transform (ç (translate (px x) (px y)))}
@@ -50,7 +47,7 @@
       :on-mouse-down (on {:mouse-down :thing} p)
       :on-mouse-up (on {:mouse-up :thing} p)} species])
 
-(defmethod view :text
+(defmethod view [:text :html]
   [{v :text path :path title :title :as p}]
   [:textarea.text-input
    {
@@ -60,7 +57,7 @@
       (on {:change :text} {:path path :convert (fn [s] (assoc p :text s))})
     }])
 
-(defmethod view :range
+(defmethod view [:range :html]
   [{{v :magnitude u :unit min :min max :max step :step :as va} :value
     title :title path :path cfn :convert :as p}]
   [:input.range-input
@@ -75,7 +72,8 @@
     (on {:change :range-slider} {:path path :convert (partial (or cfn convert) va)})
     }])
 
-(defmethod view :params [{path :path params :params}]
+(defmethod view [:params :html]
+  [{path :path params :params}]
   (into [:div.params]
     (map
       (fn [[k v]]
@@ -84,19 +82,21 @@
             [:div.param-name (name k)]
            (cond (:unit v) [:div.param-value (str (:magnitude v) (name (:unit v)))])]
          (if (:unit v)
-           [view {:value v :path (conj path k) :title k}]
-           [view (assoc v :path (conj path k) :title k)])])
+           [view {:kind :range :api :html :value v :path (conj path k) :title k}]
+           [view (assoc v :api :html :path (conj path k) :title k)])])
       params)))
 
-(defmethod view :main [{path :path params :params animals :animals title :title}]
-  (into [:div.main
-         ;[:div.title (str title)]
-    [view {:kind :params :path path :params params}]]
-    (map (fn [[k v]] [view (assoc v :path (conj path k) :title k)]) animals)))
+(defmethod view [:main :html]
+  [{path :path params :params animals :animals title :title}]
+  [:div.main
+    [view {:kind :params :api :html :path path :params params}]])
 
-(defmethod view :animals [{path :path animals :animals}]
+(defmethod view [:animals :html]
+  [{path :path animals :animals}]
   (into [:div.animals]
-    (map (fn [[k v]] [view (assoc v :path (conj path k) :title k)]) animals)))
+    (map
+      (fn [[k v]] [view (assoc v :api :html :path (conj path k) :title k)])
+       animals)))
 
 (defn root-view
   "
@@ -113,13 +113,12 @@
     {
       :on-mouse-move (on {:mouse-move :root :with [:buttons]} {})
     }
-    [css-view :main-rules {:vendors ["webkit" "moz"] :auto-prefix #{:column-width :user-select}} main]
+    [css-view :main-rules {:vendors ["webkit"  "moz"] :auto-prefix #{:column-width :user-select}} main]
     [css-view :animation-rules {} animation]
     [css-view :component-rules {} component]
-    [view {:kind :main :path [:params] :params params
-           :animals animals
+    [view {:kind :main :api :html :path [:params] :params params
            :title (select-keys state [:mouse :moving :debug])}]
-    [view {:kind :animals :path [:animals] :animals animals}]
+    [view {:kind :animals :api :html :path [:animals] :animals animals}]
   ]))
 
 (defn make-root-view! [an-atom]

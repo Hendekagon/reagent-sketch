@@ -4,6 +4,7 @@
   "
   (:require
     [reagent.core :as r]
+    [reagent.dom :as dom]
     [uitui.actions :as actions]
     [uitui.views :as views]))
 
@@ -14,4 +15,4 @@
 (defn ^:after-load start! []
   (let [root-view (views/make-root-view! (actions/handle-message!))]
    (actions/handle-message! {:app :reloaded})
-   (r/render [root-view] (.getElementById js/document "app"))))
+   (dom/render [root-view] (.getElementById js/document "app"))))

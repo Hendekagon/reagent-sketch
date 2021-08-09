@@ -56,20 +56,3 @@
     x))
 
 (def ç gcomp/render-css)
-
-(defn sassify-rule
-  "
-    Recurses through the given vector's second element
-    which represents a CSS rule, transforming any child rules
-    at the :& key into a form that Garden will compile like SASS
-  "
-  [[parent-selector {children :& :as rule}]]
-  (if children
-    [parent-selector (dissoc rule :&)
-      (map (fn [[child-selector child-rule]]
-             (sassify-rule [(str (if (keyword? child-selector)
-                      (if (namespace child-selector) "&::" "&:")
-                      "&") (as-str child-selector))
-               child-rule]))
-        children)]
-     [parent-selector rule]))
